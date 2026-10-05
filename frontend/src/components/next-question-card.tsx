@@ -3,7 +3,7 @@ import { Crosshair } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { NextQuestion } from "@/lib/types";
+import type { NextQuestion } from "@/lib/next-question";
 
 interface NextQuestionCardProps {
   question: NextQuestion;
@@ -29,9 +29,11 @@ export function NextQuestionCard({ question }: NextQuestionCardProps) {
           <p className="mt-1 text-[13px] leading-relaxed text-slate-600">
             {question.reason}
           </p>
-          <Button variant="outline" size="sm" className="mt-3 bg-white">
-            Add to session notes
-          </Button>
+          {!question.placeholder && (
+            <Button variant="outline" size="sm" className="mt-3 bg-white">
+              Add to session notes
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

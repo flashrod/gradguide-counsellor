@@ -1,10 +1,11 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import type { StudentProfile } from "@/lib/types";
+import type { ApiStudent } from "@/lib/api-types";
+import { formatBudget, formatGpa, formatTestScore } from "@/lib/format";
 
-interface StudentProfileProps {
-  student: StudentProfile;
+interface StudentProfileCardProps {
+  student: ApiStudent;
 }
 
 function initials(name: string): string {
@@ -16,22 +17,37 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-const PROFILE_FIELDS = [
-  { label: "GPA", key: "gpa" },
-  { label: "IELTS", key: "ielts" },
-  { label: "Budget", key: "budget" },
-  { label: "Career goal", key: "careerGoal" },
-  { label: "Intake", key: "intake" },
-] as const;
+export function StudentProfileCard({ student }: StudentProfileCardProps) {
+  const englishScores = [
+    `IELTS ${formatTestScore(student.ielts.overall)}`,
+    `TOEFL ${formatTestScore(student.toeflOverall)}`,
+  ].join(" · ");
 
-export function StudentProfileCard({ student }: StudentProfileProps) {
+  const fields: { label: string; value: string }[] = [
+    { label: "GPA", value: formatGpa(student.gpa) },
+    { label: "English", value: englishScores },
+    {
+      label: "Budget",
+      value: formatBudget(student.budgetAmount, student.budgetCurrency),
+    },
+    { label: "Career goal", value: student.careerGoal ?? "Unknown" },
+    { label: "Intake", value: student.preferredIntake ?? "Unknown" },
+    {
+      label: "Experience",
+      value:
+        student.workExperienceMonths != null
+          ? `${student.workExperienceMonths} months`
+          : "Unknown",
+    },
+  ];
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
           Current student
         </p>
-        <Badge variant="success">{student.status}</Badge>
+        <Badge variant="success">Live record</Badge>
       </CardHeader>
       <CardContent>
         <div className="flex items-start gap-4">
@@ -44,34 +60,39 @@ export function StudentProfileCard({ student }: StudentProfileProps) {
             <h2 className="text-lg font-semibold tracking-tight text-slate-900">
               {student.name}
             </h2>
-            <p className="mt-0.5 text-sm text-slate-500">{student.degree}</p>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {student.degree} · {student.field}
+            </p>
           </div>
         </div>
 
         <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
-          {PROFILE_FIELDS.map((field) => (
-            <div key={field.key}>
+          {fields.map((field) => (
+            <div key={field.label}>
               <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 {field.label}
               </dt>
               <dd className="mt-1 text-sm font-semibold text-slate-900">
-                {student[field.key]}
+                {field.value}
               </dd>
             </div>
           ))}
-          <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">
+        </dl>
+
+        {student.preferredCountries.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Countries
-            </dt>
-            <dd className="mt-1 flex flex-wrap gap-1.5">
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
               {student.preferredCountries.map((country) => (
                 <Badge key={country} variant="info">
                   {country}
                 </Badge>
               ))}
-            </dd>
+            </div>
           </div>
-        </dl>
+        )}
       </CardContent>
     </Card>
   );
