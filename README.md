@@ -128,8 +128,66 @@ months, total as-is; tuition + living summed only in one currency.
 `ranking.test.ts` runs the same student/courses 5× and asserts deep
 equality of status, scores, reasons, warnings, and order; the live-DB
 service test asserts identical results across calls. Run with
-`npm run test:backend` (63 tests: eligibility, cost, career, country,
-intake, ranking, consistency, service mapping + live-DB integration).
+`npm run test:backend` (111 tests: eligibility, cost, career, country,
+intake, ranking, consistency, service mapping + live-DB integration,
+ingestion parsing/validation/dedupe/sources).
+
+## Course Ingestion (Milestone 4)
+
+One real university → one real program → PostgreSQL → recommendation
+engine. No bulk scraping yet.
+
+### Architecture
+
+```text
+program page → fetchHtml → extractCourseCandidate → CourseCandidate
+  → Zod validate (VALID/PARTIAL/INVALID) → dedupe → persist → Drizzle
+```
+
+- `backend/src/ingestion/utils/fetch.ts` — timeout, User-Agent, retries,
+  1s politeness gap, robots.txt honored (throws on disallow).
+- `backend/src/ingestion/sources/` — `CollegeScorecardSource` (US Dept of
+  Education institution discovery, key via `COLLEGESCOREDATA_API_KEY`) and
+  `universities/rit.ts`, the single curated adapter. New universities plug
+  in as one file each under `universities/`.
+- `backend/src/ingestion/extractors/` + `normalize/` — deterministic
+  Cheerio/regex extraction (money, duration, GPA/IELTS/TOEFL, intakes).
+  No LLM. Missing values stay null — never fabricated.
+- `backend/src/ingestion/validation/courseSchema.ts` — range checks
+  (GPA 0–4, IELTS 0–9, TOEFL 0–120) and VALID/PARTIAL/INVALID tiers.
+  INVALID is never inserted.
+- `backend/src/ingestion/pipeline/persist.ts` — the only place that maps
+  candidates to Drizzle inserts (upsert on normalized identity).
+
+### Demo target
+
+- University: Rochester Institute of Technology (USA, Rochester NY)
+- Program: Computer Science MS — https://www.rit.edu/study/computer-science-ms
+- Extracted: degree MS, GPA 3.0, IELTS 6.5, TOEFL 88, intakes Fall/Spring,
+  backgrounds [Computer Science, Engineering, Science, Business].
+- Honestly missing: tuition and duration (not published on the program
+  page) → PARTIAL tier, stored with nulls, engine treats as neutral.
+
+### Run it
+
+```bash
+npm run db:migrate
+npm run ingest:demo
+```
+
+Needs `backend/.env` with `DATABASE_URL`. Works without a Scorecard key
+(enrichment is skipped with a log line); set `COLLEGESCOREDATA_API_KEY`
+to enable it (free at https://api.data.gov/signup/).
+
+### Provenance & limitations
+
+Every ingested course stores the exact program-page URL, a source name,
+and `lastVerifiedAt`. Current limitations: GPA scales are compared
+numerically (US 4.0 vs other scales not yet normalized); TOEFL is stored
+but not yet scored by the engine; tuition/duration nullability is new in
+migration 0002; duration `0` means "unpublished" (see `eligibilityNotes`).
+Next: scale to 20+ universities with per-site adapters + an LLM fallback
+for unstructured pages.
 
 ## Run locally
 
