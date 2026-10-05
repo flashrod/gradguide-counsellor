@@ -4,8 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { CompareTable } from "@/components/compare-table";
 import { EmptyRecommendations } from "@/components/empty-recommendations";
 import { PageHeader } from "@/components/page-header";
+import { SaveComparisonButton } from "@/components/save-comparison-button";
 import { Button } from "@/components/ui/button";
-import { DEMO_STUDENT_ID, getCourseDetails, getRecommendations } from "@/lib/api";
+import { DEMO_STUDENT_ID, getCourseDetails, getRecommendations, listSessions } from "@/lib/api";
 
 /**
  * Side-by-side comparison (Milestone 9). Server-rendered from existing
@@ -35,6 +36,10 @@ export default async function ComparePage({
     }))
   );
 
+  const { sessions } = await listSessions(DEMO_STUDENT_ID);
+  const activeSessionId =
+    sessions.find((session) => session.status === "ACTIVE")?.id ?? null;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -51,6 +56,10 @@ export default async function ComparePage({
             <Button variant="ghost" size="sm" asChild>
               <Link href="/workspace">Clear comparison</Link>
             </Button>
+            <SaveComparisonButton
+              activeSessionId={activeSessionId}
+              courseIds={entries.map((entry) => entry.recommendation.courseId)}
+            />
           </div>
         }
       />

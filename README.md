@@ -230,6 +230,37 @@ preview ranking changes — without ever mutating the stored profile.
   resets without any request. Empty (all unchanged), error, and invalid
   input states included.
 
+## Counselling Sessions (Milestone 10)
+
+### Why sessions exist
+
+Recommendations, answers, and catalogue data all change over time. A
+session freezes what the counsellor saw — student profile, ranked
+recommendations with evidence and provenance, the Next Best Question,
+saved What-If scenarios, saved comparisons, and notes — so history never
+shifts under review.
+
+### What gets persisted
+
+`POST /api/students/:id/sessions` (transactional: student check → session
++ student snapshot → recommendation snapshots → question snapshot).
+Queryables stay relational (rank, score, eligibility); evidence,
+snapshots, and simulation payloads live in jsonb. `GET
+/api/students/:id/sessions`, `GET /api/sessions/:id`, `POST
+/api/sessions/:id/end` (endedAt = COMPLETED; null = ACTIVE), plus note,
+simulation, and comparison endpoints. Session FKs cascade; snapshot
+references deliberately do not, so history survives catalogue edits.
+
+### Lifecycle
+
+Workspace "Start counselling session" → banner shows active → End
+persists `endedAt`. `/sessions` lists snapshot summaries (top
+recommendation, artifact counts); `/sessions/:id` renders the frozen
+record, bannered "Snapshot from [date]".
+
+"Historical session artifacts are snapshots and are not recomputed from
+the current course catalogue."
+
 "What-If simulations are temporary scenarios and never modify the
 student's stored profile."
 

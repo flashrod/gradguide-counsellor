@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   ApiError,
+  saveSessionSimulation,
   simulateRecommendations,
 } from "@/lib/api";
 import type {
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 
 interface WhatIfPanelProps {
   studentId: string;
+  activeSessionId: string | null;
   defaults: {
     budgetAmount: string;
     budgetCurrency: string;
@@ -92,7 +94,7 @@ function improvedDimension(
   return DIMENSION_LABELS[best.key] ?? null;
 }
 
-export function WhatIfPanel({ studentId, defaults }: WhatIfPanelProps) {
+export function WhatIfPanel({ studentId, activeSessionId, defaults }: WhatIfPanelProps) {
   const [budgetAmount, setBudgetAmount] = useState("");
   const [budgetCurrency, setBudgetCurrency] = useState("");
   const [country, setCountry] = useState("");
@@ -100,6 +102,9 @@ export function WhatIfPanel({ studentId, defaults }: WhatIfPanelProps) {
   const [gpaValue, setGpaValue] = useState("");
   const [gpaScale, setGpaScale] = useState("");
   const [result, setResult] = useState<ApiSimulationResponse | null>(null);
+  const [lastOverrides, setLastOverrides] = useState<ApiSimulationOverrides | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -147,6 +152,8 @@ export function WhatIfPanel({ studentId, defaults }: WhatIfPanelProps) {
     setLoading(true);
     try {
       setResult(await simulateRecommendations(studentId, overrides));
+      setLastOverrides(overrides);
+      setSaved(false);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Scenario simulation failed."
@@ -164,7 +171,25 @@ export function WhatIfPanel({ studentId, defaults }: WhatIfPanelProps) {
     setGpaValue("");
     setGpaScale("");
     setResult(null);
+    setLastOverrides(null);
+    setSaved(false);
     setError(null);
+  }
+
+  async function saveScenario(): Promise<void> {
+    if (activeSessionId == null || lastOverrides == null) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await saveSessionSimulation(activeSessionId, lastOverrides);
+      setSaved(true);
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Could not save the scenario."
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   const inputClass =
@@ -259,6 +284,22 @@ export function WhatIfPanel({ studentId, defaults }: WhatIfPanelProps) {
                 <RotateCcw aria-hidden />
                 Reset scenario
               </Button>
+            )}
+            {result != null && lastOverrides != null && (
+              activeSessionId != null ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void saveScenario()}
+                  disabled={saving || saved}
+                >
+                  {saved ? "Saved to session" : saving ? "Saving…" : "Save scenario to session"}
+                </Button>
+              ) : (
+                <span className="text-xs text-slate-400">
+                  Start a session to save this scenario.
+                </span>
+              )
             )}
           </div>
           {error != null && (

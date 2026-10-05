@@ -1,77 +1,26 @@
-import { Plus } from "lucide-react";
-
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { SessionHistoryList } from "@/components/session-history-list";
+import { DEMO_STUDENT_ID, listSessions } from "@/lib/api";
 
-const MOCK_SESSIONS = [
-  {
-    id: "#GG-1042",
-    student: "Aarav Sharma",
-    date: "Today · 12 min ago",
-    status: "Live",
-    notes: "Reviewing shortlisted AI programmes for Sep 2027.",
-  },
-  {
-    id: "#GG-1041",
-    student: "Diya Patel",
-    date: "Yesterday · 45 min",
-    status: "Completed",
-    notes: "Compared finance programmes; budget discussion pending.",
-  },
-  {
-    id: "#GG-1039",
-    student: "Rohan Iyer",
-    date: "2 Oct · 30 min",
-    status: "Completed",
-    notes: "Initial profile capture; IELTS score still missing.",
-  },
-] as const;
+/**
+ * Session history (Milestone 10). Live list for the workspace student.
+ * Each row summarizes the immutable snapshot taken at session time.
+ */
+export const dynamic = "force-dynamic";
 
-export default function SessionsPage() {
+export default async function SessionsPage() {
+  const { sessions } = await listSessions(DEMO_STUDENT_ID);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Sessions"
-        subtitle="Review counselling history and continue where you left off."
-        actions={
-          <Button size="sm">
-            <Plus aria-hidden />
-            New session
-          </Button>
-        }
+        subtitle="Review what happened in past counselling sessions."
       />
-
-      <Card>
-        <CardContent className="divide-y pt-2">
-          {MOCK_SESSIONS.map((session) => (
-            <div key={session.id} className="flex items-start justify-between gap-4 py-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {session.id} · {session.student}
-                  </p>
-                  <Badge
-                    variant={session.status === "Live" ? "success" : "secondary"}
-                  >
-                    {session.status}
-                  </Badge>
-                </div>
-                <p className="mt-1 text-xs text-slate-400">{session.date}</p>
-                <p className="mt-1.5 text-sm text-slate-600">{session.notes}</p>
-              </div>
-              <Button variant="outline" size="sm" className="shrink-0">
-                Open
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <p className="text-[13px] text-slate-500">
-        Session persistence, transcripts, and what-if exploration arrive in a
-        later milestone.
+      <SessionHistoryList sessions={sessions} />
+      <p className="text-xs text-slate-400">
+        History shows snapshots from session time — scores reflect the
+        catalogue as it was, not as it is today.
       </p>
     </div>
   );

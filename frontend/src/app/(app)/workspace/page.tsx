@@ -3,11 +3,13 @@ import {
   getNextQuestion,
   getRecommendations,
   getStudent,
+  listSessions,
 } from "@/lib/api";
 import { EmptyRecommendations } from "@/components/empty-recommendations";
 import { NextQuestionCard } from "@/components/next-question-card";
 import { PageHeader } from "@/components/page-header";
 import { RecommendationList } from "@/components/recommendation-list";
+import { SessionBar } from "@/components/session-bar";
 import { StudentProfileCard } from "@/components/student-profile";
 import { Badge } from "@/components/ui/badge";
 import { WhatIfPanel } from "@/components/what-if-panel";
@@ -21,17 +23,29 @@ import { WhatIfPanel } from "@/components/what-if-panel";
 export const dynamic = "force-dynamic";
 
 export default async function WorkspacePage() {
-  const [{ student }, data, nextQuestion] = await Promise.all([
+  const [{ student }, data, nextQuestion, { sessions }] = await Promise.all([
     getStudent(DEMO_STUDENT_ID),
     getRecommendations(DEMO_STUDENT_ID),
     getNextQuestion(DEMO_STUDENT_ID),
+    listSessions(DEMO_STUDENT_ID),
   ]);
+  const activeSession =
+    sessions.find((session) => session.status === "ACTIVE") ?? null;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Counsellor Workspace"
         subtitle="Make faster, more consistent course recommendations."
+      />
+
+      <SessionBar
+        studentId={student.id}
+        activeSession={
+          activeSession != null
+            ? { id: activeSession.id, startedAt: activeSession.startedAt }
+            : null
+        }
       />
 
       <StudentProfileCard student={student} />
@@ -70,6 +84,7 @@ export default async function WorkspacePage() {
 
       <WhatIfPanel
         studentId={student.id}
+        activeSessionId={activeSession?.id ?? null}
         defaults={{
           budgetAmount: student.budgetAmount?.toString() ?? "",
           budgetCurrency: student.budgetCurrency ?? "",

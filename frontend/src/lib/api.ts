@@ -2,6 +2,8 @@ import type {
   ApiCourseDetailsResponse,
   ApiNextQuestionResponse,
   ApiRecommendationsResponse,
+  ApiSessionDetail,
+  ApiSessionSummary,
   ApiSimulationOverrides,
   ApiSimulationResponse,
   ApiStudentResponse,
@@ -143,4 +145,76 @@ export async function getCourseDetails(
     throw new ApiError(502, "Recommendation service returned a malformed response.");
   }
   return data;
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${backendBaseUrl()}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(0, "Recommendation service is unreachable.");
+  }
+  if (response.status === 404) {
+    throw new ApiError(404, "Not found.");
+  }
+  if (response.status === 400) {
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new ApiError(400, data?.error ?? "Invalid request.");
+  }
+  if (!response.ok) {
+    throw new ApiError(response.status, "Recommendation service returned an error.");
+  }
+  return (await response.json()) as T;
+}
+
+export async function createSession(
+  studentId: string,
+  counsellorId = "counsellor-1"
+): Promise<{ session: ApiSessionSummary }> {
+  return postJson(`/api/students/${studentId}/sessions`, { counsellorId });
+}
+
+export async function listSessions(
+  studentId: string
+): Promise<{ sessions: ApiSessionSummary[] }> {
+  return getJson(`/api/students/${studentId}/sessions`);
+}
+
+export async function getSessionDetail(
+  sessionId: string
+): Promise<ApiSessionDetail> {
+  return getJson(`/api/sessions/${sessionId}`);
+}
+
+export async function endSession(
+  sessionId: string
+): Promise<{ session: ApiSessionSummary }> {
+  return postJson(`/api/sessions/${sessionId}/end`, {});
+}
+
+export async function addSessionNote(
+  sessionId: string,
+  content: string
+): Promise<{ note: { id: string; content: string } }> {
+  return postJson(`/api/sessions/${sessionId}/notes`, { content });
+}
+
+export async function saveSessionSimulation(
+  sessionId: string,
+  overrides: ApiSimulationOverrides
+): Promise<unknown> {
+  return postJson(`/api/sessions/${sessionId}/simulations`, { overrides });
+}
+
+export async function saveSessionComparison(
+  sessionId: string,
+  courseIds: string[]
+): Promise<unknown> {
+  return postJson(`/api/sessions/${sessionId}/comparisons`, { courseIds });
 }

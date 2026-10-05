@@ -56,7 +56,7 @@ describe("WhatIfPanel", () => {
   });
 
   it("renders the scenario controls", () => {
-    render(<WhatIfPanel studentId="s1" defaults={DEFAULTS} />);
+    render(<WhatIfPanel studentId="s1" activeSessionId={null} defaults={DEFAULTS} />);
     expect(screen.getByText("What If?")).toBeDefined();
     expect(screen.getByLabelText("Scenario budget amount")).toBeDefined();
     expect(screen.getByLabelText("Scenario country")).toBeDefined();
@@ -67,7 +67,7 @@ describe("WhatIfPanel", () => {
 
   it("applies a simulation and renders rank and score deltas", async () => {
     mockFetchOnce(SIMULATION);
-    render(<WhatIfPanel studentId="s1" defaults={DEFAULTS} />);
+    render(<WhatIfPanel studentId="s1" activeSessionId={null} defaults={DEFAULTS} />);
     fireEvent.change(screen.getByLabelText("Scenario country"), {
       target: { value: "Canada" },
     });
@@ -86,7 +86,7 @@ describe("WhatIfPanel", () => {
 
   it("resets back to baseline without further requests", async () => {
     mockFetchOnce(SIMULATION);
-    render(<WhatIfPanel studentId="s1" defaults={DEFAULTS} />);
+    render(<WhatIfPanel studentId="s1" activeSessionId={null} defaults={DEFAULTS} />);
     fireEvent.change(screen.getByLabelText("Scenario country"), {
       target: { value: "Canada" },
     });
@@ -107,7 +107,7 @@ describe("WhatIfPanel", () => {
       "fetch",
       vi.fn().mockRejectedValue(new Error("network down"))
     );
-    render(<WhatIfPanel studentId="s1" defaults={DEFAULTS} />);
+    render(<WhatIfPanel studentId="s1" activeSessionId={null} defaults={DEFAULTS} />);
     fireEvent.change(screen.getByLabelText("Scenario country"), {
       target: { value: "Canada" },
     });
@@ -119,7 +119,7 @@ describe("WhatIfPanel", () => {
 
   it("requires at least one scenario value", async () => {
     mockFetchOnce(SIMULATION);
-    render(<WhatIfPanel studentId="s1" defaults={DEFAULTS} />);
+    render(<WhatIfPanel studentId="s1" activeSessionId={null} defaults={DEFAULTS} />);
     fireEvent.click(screen.getByText("Apply simulation"));
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeDefined();

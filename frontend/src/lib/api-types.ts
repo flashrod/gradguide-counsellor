@@ -182,3 +182,102 @@ export interface ApiCourseDetails {
 export interface ApiCourseDetailsResponse {
   course: ApiCourseDetails;
 }
+
+export interface ApiSessionTopRecommendation {
+  courseName: string;
+  universityName: string;
+  score: number;
+}
+
+export interface ApiSessionSummary {
+  id: string;
+  studentId: string;
+  counsellorId: string;
+  startedAt: string;
+  endedAt: string | null;
+  status: "ACTIVE" | "COMPLETED";
+  recommendationCount: number;
+  simulationCount: number;
+  comparisonCount: number;
+  noteCount: number;
+  topRecommendation: ApiSessionTopRecommendation | null;
+}
+
+export interface ApiSessionRecommendationSnapshot {
+  id: string;
+  courseId: string;
+  score: number;
+  rank: number | null;
+  eligibility: string | null;
+  breakdown: ApiScoreBreakdown | null;
+  evidence: { reasons: ApiEvidence[]; warnings: ApiEvidence[] } | null;
+  courseSnapshot: Record<string, unknown> | null;
+  estimatedCost: { amount: number; currency: string } | null;
+}
+
+export interface ApiSessionDetail {
+  session: {
+    id: string;
+    studentId: string;
+    counsellorId: string;
+    startedAt: string;
+    endedAt: string | null;
+    status: "ACTIVE" | "COMPLETED";
+    studentSnapshot: Record<string, unknown> | null;
+  };
+  recommendations: ApiSessionRecommendationSnapshot[];
+  questions: {
+    id: string;
+    field: string;
+    priority: string;
+    impactScore: number;
+    affectedCount: number;
+    affectedPercentage: number;
+    question: string;
+    reason: string;
+  }[];
+  simulations: ApiSessionSimulation[];
+  comparisons: ApiSessionComparison[];
+  notes: { id: string; content: string }[];
+}
+
+export interface ApiSessionSimulation {
+  id: string;
+  overrides: Record<string, unknown>;
+  baseline: unknown;
+  simulated: unknown;
+  result: {
+    changes: {
+      courseId: string;
+      courseName: string;
+      change: string;
+      oldRank: number | null;
+      newRank: number | null;
+      oldScore: number | null;
+      newScore: number | null;
+      scoreDelta: number | null;
+    }[];
+    summary: {
+      movedUp: number;
+      movedDown: number;
+      newlyEligible: number;
+      noLongerEligible: number;
+      unchanged: number;
+    };
+  };
+  createdAt: string;
+}
+
+export interface ApiSessionComparison {
+  id: string;
+  courses: {
+    recommendation: {
+      courseId: string;
+      courseName: string;
+      overallScore: number;
+      eligibilityStatus: string;
+    } | null;
+    details: { courseName: string; universityName: string } | null;
+  }[];
+  createdAt: string;
+}
