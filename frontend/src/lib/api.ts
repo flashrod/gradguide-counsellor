@@ -174,10 +174,9 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function createSession(
-  studentId: string,
-  counsellorId = "counsellor-1"
+  studentId: string
 ): Promise<{ session: ApiSessionSummary }> {
-  return postJson(`/api/students/${studentId}/sessions`, { counsellorId });
+  return postJson(`/api/students/${studentId}/sessions`, {});
 }
 
 export async function listSessions(

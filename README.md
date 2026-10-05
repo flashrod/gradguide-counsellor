@@ -261,6 +261,51 @@ record, bannered "Snapshot from [date]".
 "Historical session artifacts are snapshots and are not recomputed from
 the current course catalogue."
 
+## Authentication (Milestone 11)
+
+### Approach
+
+better-auth@1.3.9 (email + password only, pinned — newer lines conflict
+with the repo's drizzle-orm/vitest pins), owned by the backend Express
+app and backed by the shared PostgreSQL. No OAuth, roles, or tenants.
+The Next.js frontend is a thin client (login form, session reads);
+cookies are same-site localhost so they flow to the API with
+credentialed requests and CORS.
+
+### Local development
+
+```bash
+cp backend/.env.example backend/.env   # set BETTER_AUTH_SECRET (openssl rand -base64 32)
+npm run db:migrate
+npm run db:seed                         # creates demo@gradguide.local (password from DEMO_COUNSELLOR_*)
+```
+
+Sign in at `/login` with the demo credentials. Never commit real
+credentials; the dev password lives only in local `.env`.
+
+### Identity → sessions
+
+`counsellorId` is a FK to the auth user — derived from the session
+cookie server-side and never trusted from the client (spoofed IDs are
+ignored). Session list/detail/notes/simulations/comparisons/end all
+verify ownership; foreign sessions return 404 so existence never leaks.
+Students and the course catalogue stay public (documented boundary —
+no per-counsellor student ownership yet).
+
+### Protected surface
+
+Pages (middleware redirect to `/login?next=…`): `/workspace`,
+`/workspace/compare`, `/sessions`, `/sessions/:id`. APIs: every
+`/api/...sessions...`, `/api/notes/...` route via `requireAuth` plus
+ownership checks. Sidebar shows the live counsellor with logout.
+
+### Limitations
+
+Single-counsellor model (no roles/teams), no password reset or email
+verification, auth tables are library-owned (hand-written Drizzle mirror,
+runtime-verified). Pre-auth dev sessions were removed by migration 0005
+— see its header comment.
+
 "What-If simulations are temporary scenarios and never modify the
 student's stored profile."
 
