@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { type Request, type Response } from "express";
 
 import { recommendationsRouter } from "./routes/recommendations.js";
+import { coursesRouter } from "./routes/courses.js";
 import { nextQuestionRouter } from "./routes/next-question.js";
 import { simulationRouter } from "./routes/simulation.js";
 import { studentsRouter } from "./routes/students.js";
@@ -21,6 +22,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api", recommendationsRouter);
+app.use("/api", coursesRouter);
 app.use("/api", nextQuestionRouter);
 app.use("/api", simulationRouter);
 app.use("/api", studentsRouter);
