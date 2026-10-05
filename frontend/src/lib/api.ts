@@ -1,4 +1,5 @@
 import type {
+  ApiNextQuestionResponse,
   ApiRecommendationsResponse,
   ApiStudentResponse,
 } from "./api-types";
@@ -69,4 +70,22 @@ export async function getRecommendations(
   );
   assertRecommendations(data);
   return data;
+}
+
+export async function getNextQuestion(
+  studentId: string
+): Promise<ApiNextQuestionResponse> {
+  const data = await getJson<ApiNextQuestionResponse>(
+    `/api/students/${studentId}/next-question`
+  );
+  if ("status" in data && data.status === "complete") return data;
+  if (
+    "field" in data &&
+    typeof data.field === "string" &&
+    typeof data.question === "string" &&
+    typeof data.reason === "string"
+  ) {
+    return data;
+  }
+  throw new ApiError(502, "Recommendation service returned a malformed response.");
 }

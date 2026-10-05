@@ -1,8 +1,9 @@
-import { DEMO_STUDENT_ID, getRecommendations, getStudent } from "@/lib/api";
 import {
-  NEXT_QUESTION_PLACEHOLDER,
-  nextQuestionFromWarnings,
-} from "@/lib/next-question";
+  DEMO_STUDENT_ID,
+  getNextQuestion,
+  getRecommendations,
+  getStudent,
+} from "@/lib/api";
 import { EmptyRecommendations } from "@/components/empty-recommendations";
 import { NextQuestionCard } from "@/components/next-question-card";
 import { PageHeader } from "@/components/page-header";
@@ -19,14 +20,11 @@ import { Badge } from "@/components/ui/badge";
 export const dynamic = "force-dynamic";
 
 export default async function WorkspacePage() {
-  const [{ student }, data] = await Promise.all([
+  const [{ student }, data, nextQuestion] = await Promise.all([
     getStudent(DEMO_STUDENT_ID),
     getRecommendations(DEMO_STUDENT_ID),
+    getNextQuestion(DEMO_STUDENT_ID),
   ]);
-
-  const topWarnings = data.recommendations[0]?.warnings ?? [];
-  const nextQuestion =
-    nextQuestionFromWarnings(topWarnings) ?? NEXT_QUESTION_PLACEHOLDER;
 
   return (
     <div className="space-y-6">
@@ -73,7 +71,7 @@ export default async function WorkspacePage() {
         <h2 id="next-question-heading" className="sr-only">
           Next best question
         </h2>
-        <NextQuestionCard question={nextQuestion} />
+        <NextQuestionCard data={nextQuestion} />
       </section>
     </div>
   );

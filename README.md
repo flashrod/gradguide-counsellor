@@ -161,10 +161,55 @@ pages are untouched.
 - `loading.tsx` skeletons, `error.tsx` retry (no silent mock fallback),
   and an honest empty state. The page is `force-dynamic` so results are
   never stale at build time.
-- Frontend tests: `npm run test --workspace=gradguide-frontend` (20 tests:
+- Frontend tests: `npm run test --workspace=gradguide-frontend` (18 tests:
   formatters, card rendering incl. unknown≠zero, evidence toggle, source
-  link, empty state, question mapping). Configure via
+  link, empty state, question card states). Configure via
   `frontend/.env` (`BACKEND_API_URL`, `WORKSPACE_STUDENT_ID`).
+
+## Next Best Question (Milestone 7)
+
+### The problem
+
+Counsellor time is limited and profiles are incomplete. Asking for every
+missing field wastes the session — the system must surface the single
+missing answer most likely to matter.
+
+### How impact is calculated
+
+`rankQuestions(student, recommendations)` (pure, in
+`backend/src/recommendations/next-question.ts`) considers the top 10
+ranked recommendations. For each student-side unknown (budget, country,
+intake, GPA, English, work experience, career goal), the affected set is
+the recommendations carrying matching unknown-evidence — e.g. TOEFL is
+never asked about when IELTS already satisfies every course, and answered
+fields (known budget, set preferences) never become candidates.
+
+```
+coverage     = affected / considered
+rankCoverage = Σ 1/(1+rank) affected / Σ 1/(1+rank) all considered
+impact       = round(100 × (0.5 × coverage + 0.5 × rankCoverage))
+```
+
+Rank #1 moves the needle more than rank #10. Priority: HIGH ≥ 70,
+MEDIUM 40–69, LOW < 40. Ties break by impact → affected count → fixed
+field order → field name. No recommendations, or nothing unresolved,
+returns `{ status: "complete" }` — never a fabricated question.
+
+### Why deterministic, why no LLM
+
+Same inputs → same question, explainable as "could affect N of your top
+M recommendations". The impact score is a deterministic prioritization
+heuristic, not a probability that the answer will change the
+recommendation. An LLM may rephrase wording later; it will never decide
+priority.
+
+### Wiring
+
+`GET /api/students/:id/next-question` → workspace card shows priority
+badge, template question, potential impact, and the structured reason.
+`npm run test:backend` covers budget/English/intake/country/work/career
+scenarios, rank sensitivity, ties, malformed evidence, and 10×
+determinism (19 new tests).
 
 ### Consistency testing
 

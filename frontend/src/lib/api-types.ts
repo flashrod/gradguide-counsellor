@@ -83,3 +83,24 @@ export interface ApiStudent {
 export interface ApiStudentResponse {
   student: ApiStudent;
 }
+
+export type NextQuestionPriority = "HIGH" | "MEDIUM" | "LOW";
+
+export interface ApiNextQuestion {
+  field: string;
+  priority: NextQuestionPriority;
+  impactScore: number;
+  affectedRecommendationCount: number;
+  affectedRecommendationPercentage: number;
+  consideredRecommendationCount: number;
+  question: string;
+  reason: string;
+  affectedCourses: string[];
+}
+
+export interface ApiNextQuestionComplete {
+  status: "complete";
+  message: string;
+}
+
+export type ApiNextQuestionResponse = ApiNextQuestion | ApiNextQuestionComplete;

@@ -33,6 +33,7 @@ npm workspaces monorepo: `frontend/` (Next.js, mock data, not wired to backend) 
 ## Hard product invariants (do not "improve")
 
 - Recommendation engine (`backend/src/recommendations/`): pure functions only — no DB/HTTP/LLM/env/randomness. Unknown ≠ ineligible. Neutral score is 70. All scores `Math.round`, clamped 0–100. The LLM must never decide ranking.
+- Next Best Question (`next-question.ts`): consumes recommendation output only, never re-scores. Impact = 100×(0.5 coverage + 0.5 rank-decay coverage) over top 10; HIGH≥70/MED≥40; ties by impact → count → field order → name. No-question → `{status:"complete"}`, never fabricated.
 - Ingestion: missing values stay `null` — never fabricate (no inferring GPA from prose, no months from credit hours). `robots.txt` is enforced; only public pages.
 - Known debt (don't silently "fix" without asking): GPA scales compared numerically across 4.0/10.0 systems; TOEFL stored but unscored; `durationMonths 0` means unpublished; intake vocab is season names.
 
