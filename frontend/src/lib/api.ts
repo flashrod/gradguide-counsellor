@@ -1,6 +1,8 @@
 import type {
   ApiNextQuestionResponse,
   ApiRecommendationsResponse,
+  ApiSimulationOverrides,
+  ApiSimulationResponse,
   ApiStudentResponse,
 } from "./api-types";
 
@@ -9,8 +11,16 @@ import type {
  * the frontend never computes scores, eligibility, or rankings.
  */
 
-const BACKEND_URL =
+const SERVER_BACKEND_URL =
   process.env["BACKEND_API_URL"] ?? "http://localhost:4000";
+
+/** Server uses BACKEND_API_URL; the browser bundle uses NEXT_PUBLIC_API_URL. */
+export function backendBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    return process.env["NEXT_PUBLIC_API_URL"] ?? SERVER_BACKEND_URL;
+  }
+  return SERVER_BACKEND_URL;
+}
 
 /** Seeded demo student used by the workspace until student selection lands. */
 export const DEMO_STUDENT_ID =
@@ -29,7 +39,7 @@ export class ApiError extends Error {
 async function getJson<T>(path: string): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${BACKEND_URL}${path}`, { cache: "no-store" });
+    response = await fetch(`${backendBaseUrl()}${path}`, { cache: "no-store" });
   } catch {
     throw new ApiError(0, "Recommendation service is unreachable.");
   }
@@ -88,4 +98,37 @@ export async function getNextQuestion(
     return data;
   }
   throw new ApiError(502, "Recommendation service returned a malformed response.");
+}
+
+export async function simulateRecommendations(
+  studentId: string,
+  overrides: ApiSimulationOverrides
+): Promise<ApiSimulationResponse> {
+  let response: Response;
+  try {
+    response = await fetch(
+      `${backendBaseUrl()}/api/students/${studentId}/recommendations/simulate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ overrides }),
+      }
+    );
+  } catch {
+    throw new ApiError(0, "Recommendation service is unreachable.");
+  }
+  if (response.status === 404) {
+    throw new ApiError(404, "Student not found.");
+  }
+  if (response.status === 400) {
+    throw new ApiError(400, "Some scenario values are invalid. Check them and try again.");
+  }
+  if (!response.ok) {
+    throw new ApiError(response.status, "Scenario simulation failed.");
+  }
+  const data: unknown = await response.json();
+  if (data == null || typeof data !== "object" || !("changes" in data)) {
+    throw new ApiError(502, "Recommendation service returned a malformed response.");
+  }
+  return data as ApiSimulationResponse;
 }

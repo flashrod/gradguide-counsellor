@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { RecommendationCard } from "@/components/recommendation-card";
 import { StudentProfileCard } from "@/components/student-profile";
 import { Badge } from "@/components/ui/badge";
+import { WhatIfPanel } from "@/components/what-if-panel";
 
 /**
  * Counsellor workspace (Milestone 6: live data).
@@ -73,6 +74,18 @@ export default async function WorkspacePage() {
         </h2>
         <NextQuestionCard data={nextQuestion} />
       </section>
+
+      <WhatIfPanel
+        studentId={student.id}
+        defaults={{
+          budgetAmount: student.budgetAmount?.toString() ?? "",
+          budgetCurrency: student.budgetCurrency ?? "",
+          country: student.preferredCountries[0] ?? "",
+          intake: student.preferredIntake ?? "",
+          gpaValue: student.gpa.value?.toString() ?? "",
+          gpaScale: student.gpa.scale?.toString() ?? "",
+        }}
+      />
     </div>
   );
 }

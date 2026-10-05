@@ -211,6 +211,28 @@ badge, template question, potential impact, and the structured reason.
 scenarios, rank sensitivity, ties, malformed evidence, and 10×
 determinism (19 new tests).
 
+## What-If Recommendation Explorer (Milestone 8)
+
+Counsellors can temporarily override GPA, budget, country, and intake to
+preview ranking changes — without ever mutating the stored profile.
+
+- `POST /api/students/:id/recommendations/simulate` with `{ overrides }`
+  (Zod-validated: GPA within scale, non-negative budget, 3-letter
+  currency, recognizable intake; unknown fields rejected). The service
+  loads the student once, ranks the stored profile (baseline) and an
+  in-memory copy (simulated) with the one existing engine, and diffs the
+  lists: `NEWLY_ELIGIBLE`, `NO_LONGER_ELIGIBLE`, `RANK_UP`, `RANK_DOWN`,
+  `UNCHANGED`, each with old/new rank and score. Read-only by
+  construction — verified by test and by diffing the row before/after.
+- The workspace "What If?" panel posts scenarios client-side, keeps the
+  baseline grid and profile untouched, shows a summary (up/down/new/gone
+  counts) plus per-course deltas with the most-improved dimension, and
+  resets without any request. Empty (all unchanged), error, and invalid
+  input states included.
+
+"What-If simulations are temporary scenarios and never modify the
+student's stored profile."
+
 ### Consistency testing
 
 `ranking.test.ts` runs the same student/courses 5× and asserts deep

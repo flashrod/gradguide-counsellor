@@ -104,3 +104,46 @@ export interface ApiNextQuestionComplete {
 }
 
 export type ApiNextQuestionResponse = ApiNextQuestion | ApiNextQuestionComplete;
+
+export interface ApiSimulationOverrides {
+  gpa?: { value: number; scale: number };
+  budget?: { amount: number; currency: string };
+  preferredCountry?: string;
+  preferredIntake?: string;
+}
+
+export type ApiRecommendationChange =
+  | "NEWLY_ELIGIBLE"
+  | "NO_LONGER_ELIGIBLE"
+  | "RANK_UP"
+  | "RANK_DOWN"
+  | "UNCHANGED";
+
+export interface ApiSimulationChange {
+  courseId: string;
+  courseName: string;
+  change: ApiRecommendationChange;
+  eligibilityChanged: boolean;
+  oldRank: number | null;
+  newRank: number | null;
+  oldScore: number | null;
+  newScore: number | null;
+  scoreDelta: number | null;
+}
+
+export interface ApiSimulationSummary {
+  movedUp: number;
+  movedDown: number;
+  newlyEligible: number;
+  noLongerEligible: number;
+  unchanged: number;
+}
+
+export interface ApiSimulationResponse {
+  studentId: string;
+  studentName: string;
+  baseline: ApiRecommendation[];
+  simulated: ApiRecommendation[];
+  changes: ApiSimulationChange[];
+  summary: ApiSimulationSummary;
+}
