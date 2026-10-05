@@ -1,6 +1,11 @@
+import "dotenv/config";
+
 import cors from "cors";
 import express, { type Request, type Response } from "express";
+import { toNodeHandler } from "better-auth/node";
 
+import { auth } from "./auth.js";
+import { loadEnv } from "./env.js";
 import { recommendationsRouter } from "./routes/recommendations.js";
 import { coursesRouter } from "./routes/courses.js";
 import { nextQuestionRouter } from "./routes/next-question.js";
@@ -8,10 +13,15 @@ import { sessionsRouter } from "./routes/sessions.js";
 import { simulationRouter } from "./routes/simulation.js";
 import { studentsRouter } from "./routes/students.js";
 
-const PORT = Number(process.env["PORT"] ?? 4000);
+const env = loadEnv();
 
 const app = express();
-app.use(cors());
+// Credentialed CORS for the Next.js frontend (cookies must flow).
+app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+
+// better-auth handler first: it consumes the raw request itself.
+app.use("/api/auth", toNodeHandler(auth));
+
 app.use(express.json());
 
 app.get("/api/health", (_req: Request, res: Response) => {
@@ -33,7 +43,7 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });
 });
 
-app.listen(PORT, () => {
+app.listen(env.PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`gradguide-backend listening on http://localhost:${PORT}`);
+  console.log(`gradguide-backend listening on http://localhost:${env.PORT}`);
 });

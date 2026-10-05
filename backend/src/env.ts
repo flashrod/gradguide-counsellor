@@ -5,6 +5,11 @@ const envSchema = z.object({
     .string()
     .min(1, "DATABASE_URL is required (see backend/.env.example)"),
   PORT: z.coerce.number().int().positive().default(4000),
+  BETTER_AUTH_SECRET: z
+    .string()
+    .min(32, "BETTER_AUTH_SECRET is required (generate with: openssl rand -base64 32)"),
+  BETTER_AUTH_URL: z.string().url().default("http://localhost:4000"),
+  FRONTEND_URL: z.string().url().default("http://localhost:3000"),
 });
 
 export type Env = z.infer<typeof envSchema>;
