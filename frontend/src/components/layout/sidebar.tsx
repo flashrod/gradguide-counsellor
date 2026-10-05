@@ -19,6 +19,7 @@ import {
   SidebarBody,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { LogoutButton } from "@/components/logout-button";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -104,13 +105,25 @@ function NavLink({
   );
 }
 
-function CounsellorProfile() {
+function CounsellorProfile({
+  user,
+}: {
+  user: { name: string; email: string } | null;
+}) {
   const { open, animate } = useSidebar();
   const showDetails = animate ? open : true;
+  const initials = user != null
+    ? user.name
+        .split(" ")
+        .map((part) => part[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "?";
   return (
     <div className="flex items-center gap-3 px-1 py-1">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-semibold text-white">
-        MN
+        {initials}
       </span>
       <motion.span
         animate={{
@@ -119,22 +132,36 @@ function CounsellorProfile() {
         }}
         className="min-w-0 flex-1 whitespace-pre leading-tight"
       >
-        <span className="block truncate text-sm font-medium text-slate-900">
-          Meera Nair
-        </span>
-        <span className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          Online
-        </span>
+        {user != null ? (
+          <>
+            <span className="block truncate text-sm font-medium text-slate-900">
+              {user.name}
+            </span>
+            <span className="mt-0.5 block truncate text-xs text-slate-500">
+              {user.email}
+            </span>
+            <span className="mt-1 block">
+              <LogoutButton />
+            </span>
+          </>
+        ) : (
+          <a
+            href="/login"
+            className="block truncate text-sm font-medium text-slate-900 underline"
+          >
+            Sign in
+          </a>
+        )}
       </motion.span>
     </div>
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  user,
+}: {
+  user: { name: string; email: string } | null;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -154,7 +181,7 @@ export function Sidebar() {
           </nav>
         </div>
         <div className="border-t border-slate-100 pt-3">
-          <CounsellorProfile />
+          <CounsellorProfile user={user} />
         </div>
       </SidebarBody>
     </AceternitySidebar>
