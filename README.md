@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GradGuide Copilot — Milestone 1 (Application Shell)
 
-## Getting Started
+Hiring assignment: Course Recommendation Assistant for study-abroad counsellors.
+Milestone 1 is UI shell + mock data only. No database, auth, Gemini, tRPC, or
+recommendation engine yet.
 
-First, run the development server:
+## Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+gradguide/
+  frontend/   Next.js 16 + React 19 + TypeScript + Tailwind v4 + shadcn-style UI
+  backend/    Node.js + Express + TypeScript skeleton (health endpoint only)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `frontend/src/app/(app)/` — routes: workspace, students, courses, sessions, settings
+- `frontend/src/components/` — Sidebar, PageHeader, StudentProfile, RecommendationCard, MatchScore, NextQuestionCard
+- `frontend/src/components/ui/` — button, card, badge, separator, avatar
+- `frontend/src/lib/` — `types.ts`, `mock-data.ts` (mock data stays separate from UI)
+- `backend/src/index.ts` — Express app with `GET /api/health` only
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# install (from repo root)
+npm install
 
-## Learn More
+# frontend → http://localhost:3000 (redirects to /workspace)
+npm run dev:frontend
 
-To learn more about Next.js, take a look at the following resources:
+# backend → http://localhost:4000/api/health
+npm run dev:backend
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Build / lint:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run build:frontend
+npm run build:backend
+npm run lint
+```
 
-## Deploy on Vercel
+## Decisions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- npm workspaces at the root; each side keeps its own `package.json` and `tsconfig`.
+- Backend is intentionally minimal (Express + health endpoint) so Milestone 2+
+  (tRPC, PostgreSQL + Drizzle, Gemini) has a clean place to land.
+- Frontend and backend are not wired together yet; `frontend/.env.example`
+  reserves `NEXT_PUBLIC_API_URL` for later milestones.
+- TypeScript strict mode, no `any`, business logic kept out of components.
