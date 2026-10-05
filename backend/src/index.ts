@@ -1,6 +1,8 @@
 import cors from "cors";
 import express, { type Request, type Response } from "express";
 
+import { recommendationsRouter } from "./routes/recommendations.js";
+
 const PORT = Number(process.env["PORT"] ?? 4000);
 
 const app = express();
@@ -14,6 +16,8 @@ app.get("/api/health", (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.use("/api", recommendationsRouter);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });
