@@ -142,6 +142,30 @@ fabricated total); `total`-period amounts remain usable.
   unknown duration never produces a zero cost.
 - Weights unchanged (25/25/20/15/10/5). `npm run test:backend` — 161 tests.
 
+## Live Recommendation Workspace (Milestone 6)
+
+The workspace (`/workspace`, dynamic server render) loads a real student
+(`GET /api/students/:id`) and engine recommendations
+(`GET /api/students/:id/recommendations`) straight from PostgreSQL.
+Mock recommendation data is deleted; placeholder Students/Courses/Sessions
+pages are untouched.
+
+- Cards render backend output verbatim: overall score, six-dimension
+  breakdown, engine reasons/warnings (expandable "Why?"), cost or
+  "Unknown" (never $0), intakes, eligibility badge, and source name +
+  verified date + clickable source URL.
+- GPA shows original value/scale ("8.4 / 10"); TOEFL shown alongside IELTS.
+- Next Best Question is derived deterministically from the top
+  recommendation's first warning (explicitly labelled placeholder when
+  there is nothing to ask — no AI yet).
+- `loading.tsx` skeletons, `error.tsx` retry (no silent mock fallback),
+  and an honest empty state. The page is `force-dynamic` so results are
+  never stale at build time.
+- Frontend tests: `npm run test --workspace=gradguide-frontend` (20 tests:
+  formatters, card rendering incl. unknown≠zero, evidence toggle, source
+  link, empty state, question mapping). Configure via
+  `frontend/.env` (`BACKEND_API_URL`, `WORKSPACE_STUDENT_ID`).
+
 ### Consistency testing
 
 `ranking.test.ts` runs the same student/courses 5× and asserts deep
