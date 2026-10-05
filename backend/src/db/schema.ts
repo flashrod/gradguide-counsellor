@@ -89,9 +89,11 @@ export const courses = pgTable(
     degreeType: text("degree_type").notNull(),
     field: text("field").notNull(),
     durationMonths: integer("duration_months").notNull(),
-    tuitionAmount: numeric("tuition_amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
-    tuitionCurrency: varchar("tuition_currency", { length: 3 }).notNull(),
-    tuitionPeriod: costPeriodEnum("tuition_period").notNull(),
+    // Tuition is nullable: an unpublished tuition must stay unknown (which
+    // the scoring engine treats as neutral) rather than masquerading as 0.
+    tuitionAmount: numeric("tuition_amount", { precision: 12, scale: 2, mode: "number" }),
+    tuitionCurrency: varchar("tuition_currency", { length: 3 }),
+    tuitionPeriod: costPeriodEnum("tuition_period"),
     livingCostAmount: numeric("living_cost_amount", { precision: 12, scale: 2, mode: "number" }),
     livingCostCurrency: varchar("living_cost_currency", { length: 3 }),
     livingCostPeriod: costPeriodEnum("living_cost_period"),
@@ -105,6 +107,9 @@ export const courses = pgTable(
     minIeltsReading: numeric("min_ielts_reading", { precision: 2, scale: 1, mode: "number" }),
     minIeltsListening: numeric("min_ielts_listening", { precision: 2, scale: 1, mode: "number" }),
     minIeltsSpeaking: numeric("min_ielts_speaking", { precision: 2, scale: 1, mode: "number" }),
+    // US programmes commonly publish TOEFL instead of IELTS. Stored for
+    // provenance/completeness; the Milestone 3 engine does not score it yet.
+    minToeflOverall: integer("min_toefl_overall"),
     workExperienceRequired: boolean("work_experience_required")
       .notNull()
       .default(false),

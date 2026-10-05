@@ -51,6 +51,7 @@ const dbCourseRow: DbCourse = {
   minIeltsReading: 6.5,
   minIeltsListening: 6.5,
   minIeltsSpeaking: 6.5,
+  minToeflOverall: null,
   workExperienceRequired: false,
   workExperienceMonthsRequired: null,
   careerTags: ["AI"],
@@ -110,8 +111,16 @@ describe.skipIf(!process.env["DATABASE_URL"])(
         "66666666-6666-4366-8366-666666666666"
       );
       expect(student.name).toContain("Aarav Sharma");
-      // 2 eligible + 1 unknown (work experience missing) = 3 visible.
-      expect(recommendations).toHaveLength(3);
+      // The 3 seeded courses must always be present (2 eligible + 1 unknown
+      // with missing work experience). Other rows (e.g. ingested courses)
+      // may also appear — the catalogue grows over time.
+      const seededIds = new Set([
+        "33333333-3333-4333-8333-333333333333",
+        "44444444-4444-4344-8344-444444444444",
+        "55555555-5555-4355-8355-555555555555",
+      ]);
+      const seeded = recommendations.filter((r) => seededIds.has(r.courseId));
+      expect(seeded).toHaveLength(3);
       for (const rec of recommendations) {
         expect(rec.overallScore).toBeGreaterThanOrEqual(0);
         expect(rec.overallScore).toBeLessThanOrEqual(100);
