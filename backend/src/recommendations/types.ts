@@ -28,13 +28,27 @@ export interface Evidence {
   message: string;
 }
 
+/**
+ * GPA values travel with their scale as two separate nullable fields
+ * (mirroring the database columns). This preserves three distinct states:
+ * no requirement/value (null value), unknown scale (value without scale),
+ * and known (both present). Only the last is comparable.
+ *
+ * Normalized comparison (value/scale) is a prototype heuristic for ranking,
+ * not an official admissions equivalency.
+ */
+export interface GpaValue {
+  value: number | null;
+  scale: number | null;
+}
+
 export interface StudentProfile {
   id: string;
   name: string;
   degree: string;
   field: string;
-  /** Null = unknown, never treated as zero. */
-  gpa: number | null;
+  /** GPA value + scale. Null value = unknown; value without scale = unknown scale. */
+  gpa: GpaValue;
   ielts: {
     overall: number | null;
     writing: number | null;
@@ -42,6 +56,8 @@ export interface StudentProfile {
     listening: number | null;
     speaking: number | null;
   };
+  /** TOEFL iBT overall (0–120). Null = unknown / not taken. */
+  toeflOverall: number | null;
   /**
    * Maximum TOTAL programme budget (tuition + living combined).
    * Null = unknown. No currency conversion is performed.
@@ -62,19 +78,22 @@ export interface Course {
   universityCountry: string;
   name: string;
   field: string;
-  durationMonths: number;
+  durationMonths: number | null;
   tuitionAmount: number | null;
   tuitionCurrency: string | null;
   tuitionPeriod: CostPeriod | null;
   livingCostAmount: number | null;
   livingCostCurrency: string | null;
   livingCostPeriod: CostPeriod | null;
-  minGpa: number | null;
+  /** Course minimum GPA value + scale (same tristate semantics as student GPA). */
+  minGpa: GpaValue;
   minIeltsOverall: number | null;
   minIeltsWriting: number | null;
   minIeltsReading: number | null;
   minIeltsListening: number | null;
   minIeltsSpeaking: number | null;
+  /** TOEFL iBT overall minimum (0–120). Alternative to IELTS, never additional. */
+  minToeflOverall: number | null;
   workExperienceRequired: boolean;
   workExperienceMonthsRequired: number | null;
   careerTags: string[];
