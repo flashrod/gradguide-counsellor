@@ -12,9 +12,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed.ts",
-    "db:check": "tsx -e \"import('./src/db/utils.ts').then(async (m) => { await m.checkDatabaseConnection(); console.log('database ok'); const { closePool } = await import('./src/db/index.ts'); await closePool(); })\""
+    "db:check": "tsx -e \"import('./src/db/utils.ts').then(async (m) => { await m.checkDatabaseConnection(); console.log('database ok'); const { closePool } = await import('./src/db/index.ts'); await closePool(); })\"",
+    "ingest:demo": "tsx src/ingestion/demo.ts"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^18.0.5",
     "drizzle-orm": "^0.44.5",

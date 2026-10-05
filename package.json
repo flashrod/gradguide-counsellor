@@ -18,7 +18,8 @@
     "db:down": "docker compose stop db",
     "db:migrate": "npm run db:migrate --workspace=gradguide-backend",
     "db:seed": "npm run db:seed --workspace=gradguide-backend",
-    "test:backend": "npm run test --workspace=gradguide-backend"
+    "test:backend": "npm run test --workspace=gradguide-backend",
+    "ingest:demo": "npm run ingest:demo --workspace=gradguide-backend"
   },
   "devDependencies": {
     "drizzle-orm": "0.44.5"
