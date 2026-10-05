@@ -4,6 +4,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -232,6 +233,11 @@ export const counsellingSessions = pgTable(
       .defaultNow()
       .notNull(),
     endedAt: timestamp("ended_at", { withTimezone: true, mode: "date" }),
+    /**
+     * Immutable student profile copy taken at session start. Historical
+     * truth — never recomputed, never backfilled.
+     */
+    studentSnapshot: jsonb("student_snapshot"),
     ...timestamps,
   },
   (table) => [index("counselling_sessions_student_id_idx").on(table.studentId)]
@@ -255,11 +261,23 @@ export const sessionRecommendations = pgTable(
     sessionId: uuid("session_id")
       .notNull()
       .references(() => counsellingSessions.id, { onDelete: "cascade" }),
+    // Reference only (no cascade): the jsonb snapshot below must survive
+    // course catalogue changes and deletions.
     courseId: uuid("course_id")
       .notNull()
-      .references(() => courses.id, { onDelete: "cascade" }),
+      .references(() => courses.id),
     score: integer("score").notNull(),
     action: recommendationActionEnum("action").notNull().default("recommended"),
+    /** 1-based rank at snapshot time. */
+    rank: integer("rank"),
+    eligibility: text("eligibility"),
+    /** Score breakdown ({ academic, career, budget, eligibility, country, intake }). */
+    breakdown: jsonb("breakdown"),
+    /** { reasons, warnings } evidence arrays. */
+    evidence: jsonb("evidence"),
+    /** Full course display snapshot (name, university, cost, source, …). */
+    courseSnapshot: jsonb("course_snapshot"),
+    estimatedCost: jsonb("estimated_cost"),
     ...timestamps,
   },
   (table) => [
@@ -287,6 +305,71 @@ export const sessionNotes = pgTable(
     ...timestamps,
   },
   (table) => [index("session_notes_session_id_idx").on(table.sessionId)]
+);
+
+// ---------------------------------------------------------------------------
+// session_questions — Next Best Question snapshots (immutable)
+// ---------------------------------------------------------------------------
+
+export const sessionQuestions = pgTable(
+  "session_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => counsellingSessions.id, { onDelete: "cascade" }),
+    field: text("field").notNull(),
+    priority: text("priority").notNull(),
+    impactScore: integer("impact_score").notNull(),
+    affectedCount: integer("affected_count").notNull(),
+    affectedPercentage: integer("affected_percentage").notNull(),
+    question: text("question").notNull(),
+    reason: text("reason").notNull(),
+    ...timestamps,
+  },
+  (table) => [index("session_questions_session_id_idx").on(table.sessionId)]
+);
+
+// ---------------------------------------------------------------------------
+// session_simulations — What-If snapshots (immutable, jsonb payloads)
+// ---------------------------------------------------------------------------
+
+export const sessionSimulations = pgTable(
+  "session_simulations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => counsellingSessions.id, { onDelete: "cascade" }),
+    /** The overrides that produced this scenario. */
+    overrides: jsonb("overrides").notNull(),
+    /** Full baseline recommendation list at simulation time. */
+    baseline: jsonb("baseline").notNull(),
+    /** Full simulated recommendation list at simulation time. */
+    simulated: jsonb("simulated").notNull(),
+    /** Diff changes + summary. */
+    result: jsonb("result").notNull(),
+    ...timestamps,
+  },
+  (table) => [index("session_simulations_session_id_idx").on(table.sessionId)]
+);
+
+// ---------------------------------------------------------------------------
+// session_comparisons — comparison snapshots (immutable, jsonb payloads)
+// ---------------------------------------------------------------------------
+
+export const sessionComparisons = pgTable(
+  "session_comparisons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => counsellingSessions.id, { onDelete: "cascade" }),
+    /** Course display snapshots (no live recomputation on read). */
+    courses: jsonb("courses").notNull(),
+    ...timestamps,
+  },
+  (table) => [index("session_comparisons_session_id_idx").on(table.sessionId)]
 );
 
 // ---------------------------------------------------------------------------
@@ -318,6 +401,9 @@ export const counsellingSessionsRelations = relations(
     }),
     recommendations: many(sessionRecommendations),
     notes: many(sessionNotes),
+    questions: many(sessionQuestions),
+    simulations: many(sessionSimulations),
+    comparisons: many(sessionComparisons),
   })
 );
 
@@ -360,3 +446,9 @@ export type NewSessionRecommendation =
   typeof sessionRecommendations.$inferInsert;
 export type SessionNote = typeof sessionNotes.$inferSelect;
 export type NewSessionNote = typeof sessionNotes.$inferInsert;
+export type SessionQuestion = typeof sessionQuestions.$inferSelect;
+export type NewSessionQuestion = typeof sessionQuestions.$inferInsert;
+export type SessionSimulation = typeof sessionSimulations.$inferSelect;
+export type NewSessionSimulation = typeof sessionSimulations.$inferInsert;
+export type SessionComparison = typeof sessionComparisons.$inferSelect;
+export type NewSessionComparison = typeof sessionComparisons.$inferInsert;
