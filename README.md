@@ -122,6 +122,25 @@ exchange rates). Budget never disqualifies — it only scores.
 `calculateEstimatedTotalCost` scales amounts by period: annual ×
 ceil(months/12) years, semester × ceil(months/6) semesters, monthly ×
 months, total as-is; tuition + living summed only in one currency.
+Period-based amounts with unknown duration yield no estimate (never a
+fabricated total); `total`-period amounts remain usable.
+
+## Correctness Hardening (Milestone 5)
+
+- **GPA scales:** values carry their scale (`gpa` + `gpa_scale`, e.g.
+  8.4/10 vs 3.0/4.0); comparison uses value/scale. A missing or invalid
+  scale is UNKNOWN, never a guess. Originals are preserved for display —
+  normalization is internal only, and linearity is a prototype heuristic,
+  not an admissions equivalency.
+- **TOEFL/IELTS:** alternative English requirements — satisfying one
+  accepted test satisfies English; no cross-test conversion. TOEFL overall
+  0–120 enforced in schema and Zod.
+- **Intakes:** normalized to season/month/year (northern-hemisphere
+  convention); "September 2027" matches "Fall", years must agree,
+  rolling/year-round matches everything. Originals preserved.
+- **Duration:** unpublished means NULL (migration backfills legacy `0`);
+  unknown duration never produces a zero cost.
+- Weights unchanged (25/25/20/15/10/5). `npm run test:backend` — 161 tests.
 
 ### Consistency testing
 
