@@ -6,6 +6,8 @@ import type { Student as DbStudent, Course as DbCourse, University as DbUniversi
 import {
   getNextBestQuestion,
   getRecommendationsForStudent,
+  getStudentById,
+  simulateRecommendationsForStudent,
   StudentNotFoundError,
   toDomainCourse,
   toDomainStudent,
@@ -170,6 +172,29 @@ describe.skipIf(!process.env["DATABASE_URL"])(
         expect(first.affectedRecommendationCount).toBeGreaterThanOrEqual(1);
         expect(first.question.length).toBeGreaterThan(0);
       }
+    });
+
+    it("never mutates the stored student record during simulation", async () => {
+      const studentId = "66666666-6666-4366-8366-666666666666";
+      const before = await getStudentById(studentId);
+      const simulation = await simulateRecommendationsForStudent(studentId, {
+        gpa: { value: 9.5, scale: 10 },
+        budget: { amount: 100000, currency: "USD" },
+        preferredCountry: "Canada",
+        preferredIntake: "Spring 2028",
+      });
+      expect(simulation.changes.length).toBeGreaterThan(0);
+      const after = await getStudentById(studentId);
+      expect(after).toEqual(before);
+    });
+
+    it("throws StudentNotFoundError when simulating an unknown student", async () => {
+      await expect(
+        simulateRecommendationsForStudent(
+          "00000000-0000-4000-8000-000000000000",
+          { budget: { amount: 100, currency: "USD" } }
+        )
+      ).rejects.toBeInstanceOf(StudentNotFoundError);
     });
   }
 );

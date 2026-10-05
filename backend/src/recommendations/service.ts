@@ -11,6 +11,11 @@ import {
 } from "../db/schema.js";
 import { rankRecommendations } from "./ranking.js";
 import { getTopQuestion, type NextQuestionResult } from "./next-question.js";
+import {
+  compareRecommendations,
+  type SimulationComparison,
+  type SimulationOverrides,
+} from "./simulation.js";
 import type {
   CostPeriod,
   Course,
@@ -116,6 +121,13 @@ export async function getStudentById(studentId: string): Promise<StudentProfile>
 export async function getRecommendationsForStudent(
   studentId: string
 ): Promise<{ student: StudentProfile; recommendations: RecommendationResult[] }> {
+  const { student, courses } = await loadStudentAndCourses(studentId);
+  return { student, recommendations: rankRecommendations(student, courses) };
+}
+
+async function loadStudentAndCourses(
+  studentId: string
+): Promise<{ student: StudentProfile; courses: Course[] }> {
   const studentRows = await db
     .select()
     .from(students)
@@ -129,11 +141,31 @@ export async function getRecommendationsForStudent(
     .from(courses)
     .innerJoin(universities, eq(courses.universityId, universities.id));
 
-  const student = toDomainStudent(studentRow);
-  const domainCourses = courseRows.map(({ course, university }) =>
-    toDomainCourse(course, university)
-  );
-  return { student, recommendations: rankRecommendations(student, domainCourses) };
+  return {
+    student: toDomainStudent(studentRow),
+    courses: courseRows.map(({ course, university }) =>
+      toDomainCourse(course, university)
+    ),
+  };
+}
+
+/**
+ * Run a What-If simulation: rank the stored profile (baseline) and a
+ * temporary overridden copy (simulated) with the same engine, then diff.
+ * Read-only — the stored profile is never written.
+ */
+export async function simulateRecommendationsForStudent(
+  studentId: string,
+  overrides: SimulationOverrides
+): Promise<
+  SimulationComparison & { studentId: string; studentName: string }
+> {
+  const { student, courses } = await loadStudentAndCourses(studentId);
+  return {
+    studentId: student.id,
+    studentName: student.name,
+    ...compareRecommendations(student, overrides, courses),
+  };
 }
 
 /**

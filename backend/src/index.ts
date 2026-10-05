@@ -3,6 +3,7 @@ import express, { type Request, type Response } from "express";
 
 import { recommendationsRouter } from "./routes/recommendations.js";
 import { nextQuestionRouter } from "./routes/next-question.js";
+import { simulationRouter } from "./routes/simulation.js";
 import { studentsRouter } from "./routes/students.js";
 
 const PORT = Number(process.env["PORT"] ?? 4000);
@@ -21,6 +22,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 
 app.use("/api", recommendationsRouter);
 app.use("/api", nextQuestionRouter);
+app.use("/api", simulationRouter);
 app.use("/api", studentsRouter);
 
 app.use((_req: Request, res: Response) => {
