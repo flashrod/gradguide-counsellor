@@ -13,6 +13,13 @@
     "build:frontend": "npm run build --workspace=gradguide-frontend",
     "build:backend": "npm run build --workspace=gradguide-backend",
     "lint": "npm run lint --workspace=gradguide-frontend",
-    "typecheck": "npm run typecheck --workspace=gradguide-backend"
+    "typecheck": "npm run typecheck --workspace=gradguide-backend",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose stop db",
+    "db:migrate": "npm run db:migrate --workspace=gradguide-backend",
+    "db:seed": "npm run db:seed --workspace=gradguide-backend"
+  },
+  "devDependencies": {
+    "drizzle-orm": "0.44.5"
   }
 }

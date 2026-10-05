@@ -23,9 +23,11 @@ import {
  * - Free-form lists that are only ever filtered/matched as sets
  *   (career tags, intakes, countries, academic backgrounds) are text[].
  *   Nothing relational is hidden in JSON.
- * - The only enum is session_recommendations.action, whose values are
- *   fixed by the product spec. Degree types / currencies stay as text
- *   because their value sets are open-ended (MSc, MA, MBA, … / ISO codes).
+ * - The only enums are session_recommendations.action, whose values are
+ *   fixed by the product spec, and cost_period (annual | total | semester |
+ *   monthly), which disambiguates what each money amount represents.
+ *   Degree types / currencies stay as text because their value sets are
+ *   open-ended (MSc, MA, MBA, … / ISO codes).
  * - Every course carries provenance (sourceUrl, sourceName, lastVerifiedAt).
  */
 
@@ -38,6 +40,18 @@ const timestamps = {
     .$onUpdate(() => new Date())
     .notNull(),
 };
+
+/**
+ * What a tuition / living-cost amount represents.
+ * Required alongside every amount so the recommendation engine never has to
+ * guess whether e.g. 28500 means per year or for the whole programme.
+ */
+export const costPeriodEnum = pgEnum("cost_period", [
+  "annual",
+  "total",
+  "semester",
+  "monthly",
+]);
 
 // ---------------------------------------------------------------------------
 // universities
@@ -77,8 +91,10 @@ export const courses = pgTable(
     durationMonths: integer("duration_months").notNull(),
     tuitionAmount: numeric("tuition_amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     tuitionCurrency: varchar("tuition_currency", { length: 3 }).notNull(),
+    tuitionPeriod: costPeriodEnum("tuition_period").notNull(),
     livingCostAmount: numeric("living_cost_amount", { precision: 12, scale: 2, mode: "number" }),
     livingCostCurrency: varchar("living_cost_currency", { length: 3 }),
+    livingCostPeriod: costPeriodEnum("living_cost_period"),
     intakes: text("intakes")
       .array()
       .notNull()
@@ -92,6 +108,9 @@ export const courses = pgTable(
     workExperienceRequired: boolean("work_experience_required")
       .notNull()
       .default(false),
+    workExperienceMonthsRequired: integer(
+      "work_experience_months_required"
+    ),
     careerTags: text("career_tags")
       .array()
       .notNull()
@@ -117,6 +136,14 @@ export const courses = pgTable(
     ),
     index("courses_university_id_idx").on(table.universityId),
     index("courses_field_idx").on(table.field),
+    check(
+      "courses_work_experience_months_non_negative",
+      sql`${table.workExperienceMonthsRequired} >= 0`
+    ),
+    check(
+      "courses_living_cost_amount_period_consistency",
+      sql`(${table.livingCostAmount} IS NULL) = (${table.livingCostPeriod} IS NULL)`
+    ),
   ]
 );
 
@@ -137,6 +164,12 @@ export const students = pgTable(
     ieltsReading: numeric("ielts_reading", { precision: 2, scale: 1, mode: "number" }),
     ieltsListening: numeric("ielts_listening", { precision: 2, scale: 1, mode: "number" }),
     ieltsSpeaking: numeric("ielts_speaking", { precision: 2, scale: 1, mode: "number" }),
+    /**
+     * BUDGET SEMANTICS: the student's maximum TOTAL budget for the complete
+     * study programme, including tuition AND living costs combined.
+     * No currency conversion is performed yet — amounts are compared
+     * as-stated until a later milestone adds conversion.
+     */
     budgetAmount: numeric("budget_amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
     budgetCurrency: varchar("budget_currency", { length: 3 }).notNull(),
     careerGoal: text("career_goal"),
