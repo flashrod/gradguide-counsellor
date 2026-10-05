@@ -24,6 +24,8 @@ export interface CourseCandidate {
   livingCostCurrency: string | null;
   livingCostPeriod: CostPeriod | null;
   minimumGpa: number | null;
+  /** Scale the GPA minimum is expressed on (e.g. 4 for 3.0/4.0). Null = unknown. */
+  minimumGpaScale: number | null;
   minimumIelts: number | null;
   minimumToefl: number | null;
   workExperienceRequired: boolean;

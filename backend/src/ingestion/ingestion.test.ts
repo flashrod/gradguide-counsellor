@@ -21,6 +21,7 @@ function makeCandidate(overrides: Partial<CourseCandidate> = {}): CourseCandidat
     livingCostCurrency: null,
     livingCostPeriod: null,
     minimumGpa: 3.0,
+    minimumGpaScale: 4,
     minimumIelts: 6.5,
     minimumToefl: 88,
     workExperienceRequired: false,

@@ -116,7 +116,18 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
   const text = mainText(input.html);
 
   const gpa = parseGpa(text);
-  evidence.push(gpa != null ? `gpa: ${gpa}` : "gpa: not stated");
+  // Scale heuristic (documented): a GPA minimum at or below 4.0 on a US
+  // university page is read as a 4.0-scale value. Anything else leaves the
+  // scale unknown rather than guessed.
+  const gpaScale =
+    gpa != null &&
+    gpa <= 4 &&
+    input.universityCountry.toLowerCase() === "usa"
+      ? 4
+      : null;
+  evidence.push(
+    gpa != null ? `gpa: ${gpa}${gpaScale != null ? `/${gpaScale}` : " (scale unknown)"}` : "gpa: not stated"
+  );
   const ielts = parseIelts(text);
   evidence.push(ielts != null ? `ielts: ${ielts}` : "ielts: not stated");
   const toefl = parseToefl(text);
@@ -178,6 +189,7 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
     livingCostCurrency: null,
     livingCostPeriod: null,
     minimumGpa: gpa,
+    minimumGpaScale: gpaScale,
     minimumIelts: ielts,
     minimumToefl: toefl,
     workExperienceRequired: workRequired,

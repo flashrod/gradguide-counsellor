@@ -44,6 +44,7 @@ export function toNewCourse(
     livingCostPeriod: candidate.livingCostPeriod,
     intakes: candidate.intakes,
     minGpa: candidate.minimumGpa,
+    minGpaScale: candidate.minimumGpaScale,
     minIeltsOverall: candidate.minimumIelts,
     minIeltsWriting: null,
     minIeltsReading: null,

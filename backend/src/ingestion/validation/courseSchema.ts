@@ -34,6 +34,7 @@ export const courseCandidateSchema = z.object({
   livingCostCurrency: z.string().nullable(),
   livingCostPeriod: costPeriodSchema.nullable(),
   minimumGpa: z.number().min(0).max(4).nullable(),
+  minimumGpaScale: z.number().int().positive().nullable(),
   minimumIelts: z.number().min(0).max(9).nullable(),
   minimumToefl: z.number().int().min(0).max(120).nullable(),
   workExperienceRequired: z.boolean(),
