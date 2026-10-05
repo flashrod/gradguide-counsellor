@@ -233,6 +233,22 @@ preview ranking changes — without ever mutating the stored profile.
 "What-If simulations are temporary scenarios and never modify the
 student's stored profile."
 
+## Course Comparison (Milestone 9)
+
+Cards offer a Compare toggle (max 3, client-side only); the tray links to
+`/workspace/compare?ids=…`, a dynamic server view joining the existing
+recommendations response with display-only `GET /api/courses/:id` rows.
+
+- Table rows: match score, eligibility (with the engine's reason when not
+  eligible), six dimension scores, tuition, est. total, duration, GPA /
+  IELTS / TOEFL requirements, intakes, backgrounds, source + verified
+  date. Unknown stays "Unknown"/"Not provided" — never $0 or 0 months.
+- Per-dimension "Strongest" marks the highest value (never an overall
+  winner); evidence sections reuse backend reasons/warnings verbatim.
+- No scoring, no persistence, no LLM. `npm run test
+  --workspace=gradguide-frontend` covers selection, limits, table,
+  unknowns, highlights, evidence, and empty states.
+
 ### Consistency testing
 
 `ranking.test.ts` runs the same student/courses 5× and asserts deep
