@@ -84,6 +84,53 @@ Seed contents (all explicitly labelled demo/mock, stable UUIDs, idempotent):
 2 universities, 3 courses, 1 student, 1 live session, 2 recommendations,
 1 session note. No real university or course data anywhere.
 
+## Recommendation Engine (Milestone 3)
+
+### Why deterministic
+
+Two counsellors given the same student profile and course dataset must see
+the same ranking. An LLM is non-deterministic by nature, so it is banned
+from the ranking path: scoring is pure TypeScript, no I/O, no randomness,
+no global state. A future LLM may turn the structured evidence into prose,
+but it will never decide the order.
+
+### Eligibility vs ranking
+
+`evaluateEligibility(student, course)` returns `eligible | ineligible |
+unknown` plus structured reasons/warnings. Hard fails (GPA/IELTS/section
+below minimum, insufficient work experience, background mismatch) mean
+`ineligible` and the course is excluded from ranking. `rankRecommendations`
+scores the survivors and sorts by overall desc → eligibility desc →
+budget desc → course id asc (total, reproducible order).
+
+### Score weights
+
+Academic 25% · Career 25% · Budget 20% · Eligibility 15% · Country 10% ·
+Intake 5%. Every part is an integer 0–100; the overall is
+`Math.round` of the weighted sum (eligible→100, unknown→70, ineligible→0
+for the eligibility part; neutral 70 wherever data is missing).
+
+### Missing information
+
+Unknown is not ineligible. A missing GPA/IELTS section/work-history yields
+`unknown` + warning so the future "Next Best Question" feature knows what
+to ask. Currency mismatch yields neutral budget + warning (no invented
+exchange rates). Budget never disqualifies — it only scores.
+
+### Cost normalization
+
+`calculateEstimatedTotalCost` scales amounts by period: annual ×
+ceil(months/12) years, semester × ceil(months/6) semesters, monthly ×
+months, total as-is; tuition + living summed only in one currency.
+
+### Consistency testing
+
+`ranking.test.ts` runs the same student/courses 5× and asserts deep
+equality of status, scores, reasons, warnings, and order; the live-DB
+service test asserts identical results across calls. Run with
+`npm run test:backend` (63 tests: eligibility, cost, career, country,
+intake, ranking, consistency, service mapping + live-DB integration).
+
 ## Run locally
 
 ```bash
