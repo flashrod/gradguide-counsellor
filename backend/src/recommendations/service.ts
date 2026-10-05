@@ -86,7 +86,25 @@ export function toDomainCourse(
     careerTags: row.careerTags,
     academicBackgrounds: row.academicBackgrounds,
     intakes: row.intakes,
+    sourceUrl: row.sourceUrl,
+    sourceName: row.sourceName,
+    lastVerifiedAt: row.lastVerifiedAt,
   };
+}
+
+/**
+ * Load a single student for display. Returns the domain profile only —
+ * no recommendations, no scoring.
+ */
+export async function getStudentById(studentId: string): Promise<StudentProfile> {
+  const studentRows = await db
+    .select()
+    .from(students)
+    .where(eq(students.id, studentId))
+    .limit(1);
+  const studentRow = studentRows[0];
+  if (studentRow == null) throw new StudentNotFoundError(studentId);
+  return toDomainStudent(studentRow);
 }
 
 /**

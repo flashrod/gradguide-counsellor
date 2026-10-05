@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { type Request, type Response } from "express";
 
 import { recommendationsRouter } from "./routes/recommendations.js";
+import { studentsRouter } from "./routes/students.js";
 
 const PORT = Number(process.env["PORT"] ?? 4000);
 
@@ -18,6 +19,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api", recommendationsRouter);
+app.use("/api", studentsRouter);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });

@@ -56,6 +56,9 @@ export function makeCourse(overrides: Partial<Course> = {}): Course {
     careerTags: ["AI", "Machine Learning"],
     academicBackgrounds: ["Computer Science"],
     intakes: ["September 2027"],
+    sourceUrl: "https://example.com/test-programme",
+    sourceName: "Test source",
+    lastVerifiedAt: new Date("2026-10-01T00:00:00.000Z"),
     ...overrides,
   };
 }

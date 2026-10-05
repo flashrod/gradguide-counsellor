@@ -99,6 +99,9 @@ export interface Course {
   careerTags: string[];
   academicBackgrounds: string[];
   intakes: string[];
+  sourceUrl: string;
+  sourceName: string;
+  lastVerifiedAt: Date;
 }
 
 export interface EligibilityResult {
@@ -126,6 +129,13 @@ export interface RecommendationResult {
   universityId: string;
   courseName: string;
   universityName: string;
+  /** Display/provenance fields mapped from the stored rows (no logic). */
+  universityCountry: string;
+  sourceUrl: string;
+  sourceName: string;
+  /** ISO timestamp of last verification. */
+  lastVerifiedAt: string;
+  intakes: string[];
   eligibilityStatus: EligibilityStatus;
   overallScore: number;
   scoreBreakdown: ScoreBreakdown;
