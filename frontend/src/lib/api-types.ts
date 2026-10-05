@@ -147,3 +147,38 @@ export interface ApiSimulationResponse {
   changes: ApiSimulationChange[];
   summary: ApiSimulationSummary;
 }
+
+export interface ApiCourseDetails {
+  courseName: string;
+  universityName: string;
+  universityCountry: string;
+  universityCity: string;
+  degreeType: string;
+  field: string;
+  durationMonths: number | null;
+  tuitionAmount: number | null;
+  tuitionCurrency: string | null;
+  tuitionPeriod: string | null;
+  livingCostAmount: number | null;
+  livingCostCurrency: string | null;
+  livingCostPeriod: string | null;
+  minGpa: { value: number | null; scale: number | null };
+  minIeltsOverall: number | null;
+  minIeltsWriting: number | null;
+  minIeltsReading: number | null;
+  minIeltsListening: number | null;
+  minIeltsSpeaking: number | null;
+  minToeflOverall: number | null;
+  workExperienceRequired: boolean;
+  workExperienceMonthsRequired: number | null;
+  academicBackgrounds: string[];
+  intakes: string[];
+  careerTags: string[];
+  sourceUrl: string;
+  sourceName: string;
+  lastVerifiedAt: string;
+}
+
+export interface ApiCourseDetailsResponse {
+  course: ApiCourseDetails;
+}

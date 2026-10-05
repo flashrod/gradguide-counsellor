@@ -7,7 +7,7 @@ import {
 import { EmptyRecommendations } from "@/components/empty-recommendations";
 import { NextQuestionCard } from "@/components/next-question-card";
 import { PageHeader } from "@/components/page-header";
-import { RecommendationCard } from "@/components/recommendation-card";
+import { RecommendationList } from "@/components/recommendation-list";
 import { StudentProfileCard } from "@/components/student-profile";
 import { Badge } from "@/components/ui/badge";
 import { WhatIfPanel } from "@/components/what-if-panel";
@@ -57,14 +57,7 @@ export default async function WorkspacePage() {
         {data.recommendations.length === 0 ? (
           <EmptyRecommendations />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {data.recommendations.map((recommendation) => (
-              <RecommendationCard
-                key={recommendation.courseId}
-                recommendation={recommendation}
-              />
-            ))}
-          </div>
+          <RecommendationList recommendations={data.recommendations} />
         )}
       </section>
 

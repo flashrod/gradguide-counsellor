@@ -1,4 +1,5 @@
 import type {
+  ApiCourseDetailsResponse,
   ApiNextQuestionResponse,
   ApiRecommendationsResponse,
   ApiSimulationOverrides,
@@ -100,8 +101,7 @@ export async function getNextQuestion(
   throw new ApiError(502, "Recommendation service returned a malformed response.");
 }
 
-export async function simulateRecommendations(
-  studentId: string,
+export async function simulateRecommendations(  studentId: string,
   overrides: ApiSimulationOverrides
 ): Promise<ApiSimulationResponse> {
   let response: Response;
@@ -131,4 +131,16 @@ export async function simulateRecommendations(
     throw new ApiError(502, "Recommendation service returned a malformed response.");
   }
   return data as ApiSimulationResponse;
+}
+
+export async function getCourseDetails(
+  courseId: string
+): Promise<ApiCourseDetailsResponse> {
+  const data = await getJson<ApiCourseDetailsResponse>(
+    `/api/courses/${courseId}`
+  );
+  if (data.course == null || typeof data.course !== "object") {
+    throw new ApiError(502, "Recommendation service returned a malformed response.");
+  }
+  return data;
 }

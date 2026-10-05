@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   AlertTriangle,
+  ArrowLeftRight,
   CheckCircle2,
   ChevronDown,
   ExternalLink,
@@ -19,6 +20,8 @@ import { cn } from "@/lib/utils";
 
 interface RecommendationCardProps {
   recommendation: ApiRecommendation;
+  selected?: boolean;
+  onToggleSelect?: (courseId: string) => void;
 }
 
 const BREAKDOWN_ROWS = [
@@ -30,12 +33,16 @@ const BREAKDOWN_ROWS = [
   { key: "intake", label: "Intake" },
 ] as const;
 
-export function RecommendationCard({ recommendation }: RecommendationCardProps) {
+export function RecommendationCard({
+  recommendation,
+  selected = false,
+  onToggleSelect,
+}: RecommendationCardProps) {
   const [expanded, setExpanded] = useState(false);
   const isEligible = recommendation.eligibilityStatus === "eligible";
 
   return (
-    <Card className="flex flex-col">
+    <Card className={cn("flex flex-col", selected && "ring-2 ring-slate-900")}>
       <CardContent className="flex flex-1 flex-col pt-6">
         <div className="flex items-start justify-between gap-3">
           <Badge variant="info">
@@ -113,19 +120,33 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
 
         <Separator className="my-4" />
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((open) => !open)}
-        >
-          Why {recommendation.overallScore}?
-          <ChevronDown
-            aria-hidden
-            className={cn("transition-transform", expanded && "rotate-180")}
-          />
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((open) => !open)}
+          >
+            Why {recommendation.overallScore}?
+            <ChevronDown
+              aria-hidden
+              className={cn("transition-transform", expanded && "rotate-180")}
+            />
+          </Button>
+          {onToggleSelect != null && (
+            <Button
+              variant={selected ? "default" : "secondary"}
+              size="sm"
+              className="flex-1"
+              aria-pressed={selected}
+              onClick={() => onToggleSelect(recommendation.courseId)}
+            >
+              <ArrowLeftRight aria-hidden />
+              {selected ? "Selected" : "Compare"}
+            </Button>
+          )}
+        </div>
 
         {expanded && (
           <div className="mt-4 space-y-4">
