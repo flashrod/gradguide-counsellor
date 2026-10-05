@@ -10,6 +10,7 @@ import {
   type University as DbUniversity,
 } from "../db/schema.js";
 import { rankRecommendations } from "./ranking.js";
+import { getTopQuestion, type NextQuestionResult } from "./next-question.js";
 import type {
   CostPeriod,
   Course,
@@ -133,4 +134,17 @@ export async function getRecommendationsForStudent(
     toDomainCourse(course, university)
   );
   return { student, recommendations: rankRecommendations(student, domainCourses) };
+}
+
+/**
+ * The single most useful next question for a student, derived from current
+ * recommendation output. Reuses the recommendation service — no duplicated
+ * logic.
+ */
+export async function getNextBestQuestion(
+  studentId: string
+): Promise<NextQuestionResult> {
+  const { student, recommendations } =
+    await getRecommendationsForStudent(studentId);
+  return getTopQuestion(student, recommendations);
 }

@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import type { Student as DbStudent, Course as DbCourse, University as DbUniversity } from "../db/schema.js";
 import {
+  getNextBestQuestion,
   getRecommendationsForStudent,
   StudentNotFoundError,
   toDomainCourse,
@@ -152,6 +153,23 @@ describe.skipIf(!process.env["DATABASE_URL"])(
       await expect(
         getRecommendationsForStudent("00000000-0000-4000-8000-000000000000")
       ).rejects.toBeInstanceOf(StudentNotFoundError);
+    });
+
+    it("returns a deterministic next-best question for the demo student", async () => {
+      const first = await getNextBestQuestion(
+        "66666666-6666-4366-8366-666666666666"
+      );
+      const second = await getNextBestQuestion(
+        "66666666-6666-4366-8366-666666666666"
+      );
+      expect(second).toEqual(first);
+      // Demo student lacks work experience while a ranked course requires
+      // it; budget/TOEFL are known-or-satisfied and must not be asked about.
+      expect(first).toMatchObject({ field: "work-experience" });
+      if ("field" in first) {
+        expect(first.affectedRecommendationCount).toBeGreaterThanOrEqual(1);
+        expect(first.question.length).toBeGreaterThan(0);
+      }
     });
   }
 );
