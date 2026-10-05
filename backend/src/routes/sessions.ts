@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 
+import { requireAuth } from "../middleware/require-auth.js";
 import {
   addSessionNote,
   createSession,
@@ -27,10 +28,6 @@ const noteParams = z.object({
   noteId: z.string().uuid("noteId must be a UUID"),
 });
 
-const createBody = z.object({
-  counsellorId: z.string().trim().min(1).max(200),
-});
-
 const noteBody = z.object({
   content: z.string().trim().min(1).max(5000),
 });
@@ -44,6 +41,16 @@ const comparisonBody = z.object({
 });
 
 export const sessionsRouter: Router = Router();
+
+// All session routes require authentication; the counsellor identity always
+// comes from the session cookie, never from the request body.
+sessionsRouter.use(requireAuth);
+
+function counsellorId(req: Request): string {
+  const id = req.counsellor?.id;
+  if (id == null) throw new Error("Authenticated counsellor missing");
+  return id;
+}
 
 function handleError(error: unknown, res: Response): void {
   if (error instanceof StudentNotFoundError || error instanceof SessionNotFoundError) {
@@ -59,14 +66,9 @@ sessionsRouter.post("/students/:studentId/sessions", async (req: Request, res: R
     res.status(400).json({ error: params.error.issues[0]?.message });
     return;
   }
-  const body = createBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ error: "counsellorId is required" });
-    return;
-  }
   try {
     res.status(201).json({
-      session: await createSession(params.data.studentId, body.data.counsellorId),
+      session: await createSession(params.data.studentId, counsellorId(req)),
     });
   } catch (error) {
     handleError(error, res);
@@ -80,7 +82,9 @@ sessionsRouter.get("/students/:studentId/sessions", async (req: Request, res: Re
     return;
   }
   try {
-    res.json({ sessions: await listSessions(params.data.studentId) });
+    res.json({
+      sessions: await listSessions(params.data.studentId, counsellorId(req)),
+    });
   } catch (error) {
     handleError(error, res);
   }
@@ -93,7 +97,7 @@ sessionsRouter.get("/sessions/:sessionId", async (req: Request, res: Response) =
     return;
   }
   try {
-    res.json(await getSessionDetail(params.data.sessionId));
+    res.json(await getSessionDetail(params.data.sessionId, counsellorId(req)));
   } catch (error) {
     handleError(error, res);
   }
@@ -106,7 +110,9 @@ sessionsRouter.post("/sessions/:sessionId/end", async (req: Request, res: Respon
     return;
   }
   try {
-    res.json({ session: await endSession(params.data.sessionId) });
+    res.json({
+      session: await endSession(params.data.sessionId, counsellorId(req)),
+    });
   } catch (error) {
     handleError(error, res);
   }
@@ -125,7 +131,11 @@ sessionsRouter.post("/sessions/:sessionId/notes", async (req: Request, res: Resp
   }
   try {
     res.status(201).json({
-      note: await addSessionNote(params.data.sessionId, body.data.content),
+      note: await addSessionNote(
+        params.data.sessionId,
+        counsellorId(req),
+        body.data.content
+      ),
     });
   } catch (error) {
     handleError(error, res);
@@ -144,7 +154,13 @@ sessionsRouter.put("/notes/:noteId", async (req: Request, res: Response) => {
     return;
   }
   try {
-    res.json({ note: await updateSessionNote(params.data.noteId, body.data.content) });
+    res.json({
+      note: await updateSessionNote(
+        params.data.noteId,
+        counsellorId(req),
+        body.data.content
+      ),
+    });
   } catch (error) {
     if ((error as Error).message.startsWith("Note not found")) {
       res.status(404).json({ error: (error as Error).message });
@@ -173,7 +189,11 @@ sessionsRouter.post("/sessions/:sessionId/simulations", async (req: Request, res
   }
   try {
     res.status(201).json({
-      simulation: await saveSessionSimulation(params.data.sessionId, body.data.overrides),
+      simulation: await saveSessionSimulation(
+        params.data.sessionId,
+        counsellorId(req),
+        body.data.overrides
+      ),
     });
   } catch (error) {
     handleError(error, res);
@@ -193,7 +213,11 @@ sessionsRouter.post("/sessions/:sessionId/comparisons", async (req: Request, res
   }
   try {
     res.status(201).json({
-      comparison: await saveSessionComparison(params.data.sessionId, body.data.courseIds),
+      comparison: await saveSessionComparison(
+        params.data.sessionId,
+        counsellorId(req),
+        body.data.courseIds
+      ),
     });
   } catch (error) {
     if ((error as Error).message.startsWith("Courses are not in the current recommendations")) {

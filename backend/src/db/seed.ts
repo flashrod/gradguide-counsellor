@@ -2,8 +2,10 @@ import "dotenv/config";
 
 import { z } from "zod";
 
+import { auth } from "../auth.js";
 import { closePool, db } from "./index.js";
 import {
+  authUser,
   counsellingSessions,
   courses,
   sessionNotes,
@@ -11,6 +13,7 @@ import {
   students,
   universities,
 } from "./schema.js";
+import { eq } from "drizzle-orm";
 
 /**
  * Local-development seed (Milestone 2).
@@ -48,6 +51,27 @@ const STUDENT_DEMO = "66666666-6666-4366-8366-666666666666";
 const SESSION_DEMO = "77777777-7777-4377-8377-777777777777";
 
 async function seed(): Promise<void> {
+  // Demo counsellor (idempotent): the seeded session must reference a real
+  // user row. Credentials come from DEMO_COUNSELLOR_* env (dev only).
+  const demoEmail =
+    process.env["DEMO_COUNSELLOR_EMAIL"] ?? "demo@gradguide.local";
+  const demoPassword =
+    process.env["DEMO_COUNSELLOR_PASSWORD"] ?? "gradguide-dev-only";
+  const demoName = process.env["DEMO_COUNSELLOR_NAME"] ?? "Demo Counsellor";
+  try {
+    await auth.api.signUpEmail({
+      body: { email: demoEmail, password: demoPassword, name: demoName },
+    });
+  } catch {
+    // Already exists — reuse the existing row.
+  }
+  const [demoUser] = await db
+    .select({ id: authUser.id })
+    .from(authUser)
+    .where(eq(authUser.email, demoEmail))
+    .limit(1);
+  if (demoUser == null) throw new Error("Demo counsellor seed failed");
+
   await db.transaction(async (tx) => {
     // Clear child → parent (dev-only reset).
     await tx.delete(sessionNotes);
@@ -191,7 +215,7 @@ async function seed(): Promise<void> {
       {
         id: SESSION_DEMO,
         studentId: STUDENT_DEMO,
-        counsellorId: "demo-counsellor-1",
+        counsellorId: demoUser.id,
         startedAt: new Date("2026-10-05T09:00:00.000Z"),
         endedAt: null,
       },

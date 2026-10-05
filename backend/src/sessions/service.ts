@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { toCourseDetails } from "../courses/details.js";
 import { db } from "../db/index.js";
@@ -176,17 +176,41 @@ export async function createSession(
   return summarizeSession(sessionId);
 }
 
-export async function listSessions(studentId: string): Promise<SessionSummary[]> {
+export async function listSessions(
+  studentId: string,
+  counsellorId: string
+): Promise<SessionSummary[]> {
   await getStudentById(studentId);
   const sessions = await db
     .select()
     .from(counsellingSessions)
-    .where(eq(counsellingSessions.studentId, studentId))
+    .where(
+      and(
+        eq(counsellingSessions.studentId, studentId),
+        eq(counsellingSessions.counsellorId, counsellorId)
+      )
+    )
     .orderBy(desc(counsellingSessions.startedAt));
   return Promise.all(sessions.map((session) => summarizeSession(session.id)));
 }
 
-export async function getSessionDetail(sessionId: string): Promise<{
+/** Load a session only if it belongs to the counsellor (404 otherwise). */
+async function requireOwnedSession(sessionId: string, counsellorId: string) {
+  const [session] = await db
+    .select()
+    .from(counsellingSessions)
+    .where(
+      and(
+        eq(counsellingSessions.id, sessionId),
+        eq(counsellingSessions.counsellorId, counsellorId)
+      )
+    )
+    .limit(1);
+  if (session == null) throw new SessionNotFoundError(sessionId);
+  return session;
+}
+
+export async function getSessionDetail(sessionId: string, counsellorId: string): Promise<{
   session: {
     id: string;
     studentId: string;
@@ -202,12 +226,7 @@ export async function getSessionDetail(sessionId: string): Promise<{
   comparisons: typeof sessionComparisons.$inferSelect[];
   notes: typeof sessionNotes.$inferSelect[];
 }> {
-  const [session] = await db
-    .select()
-    .from(counsellingSessions)
-    .where(eq(counsellingSessions.id, sessionId))
-    .limit(1);
-  if (session == null) throw new SessionNotFoundError(sessionId);
+  const session = await requireOwnedSession(sessionId, counsellorId);
   const [recommendations, questions, simulations, comparisons, notes] =
     await Promise.all([
       db
@@ -250,13 +269,11 @@ export async function getSessionDetail(sessionId: string): Promise<{
   };
 }
 
-export async function endSession(sessionId: string): Promise<SessionSummary> {
-  const [session] = await db
-    .select()
-    .from(counsellingSessions)
-    .where(eq(counsellingSessions.id, sessionId))
-    .limit(1);
-  if (session == null) throw new SessionNotFoundError(sessionId);
+export async function endSession(
+  sessionId: string,
+  counsellorId: string
+): Promise<SessionSummary> {
+  const session = await requireOwnedSession(sessionId, counsellorId);
   if (session.endedAt == null) {
     await db
       .update(counsellingSessions)
@@ -266,13 +283,12 @@ export async function endSession(sessionId: string): Promise<SessionSummary> {
   return summarizeSession(sessionId);
 }
 
-export async function addSessionNote(sessionId: string, content: string) {
-  const [session] = await db
-    .select({ id: counsellingSessions.id })
-    .from(counsellingSessions)
-    .where(eq(counsellingSessions.id, sessionId))
-    .limit(1);
-  if (session == null) throw new SessionNotFoundError(sessionId);
+export async function addSessionNote(
+  sessionId: string,
+  counsellorId: string,
+  content: string
+) {
+  await requireOwnedSession(sessionId, counsellorId);
   const [note] = await db
     .insert(sessionNotes)
     .values({ sessionId, content })
@@ -280,7 +296,26 @@ export async function addSessionNote(sessionId: string, content: string) {
   return note;
 }
 
-export async function updateSessionNote(noteId: string, content: string) {
+export async function updateSessionNote(
+  noteId: string,
+  counsellorId: string,
+  content: string
+) {
+  const [row] = await db
+    .select({ note: sessionNotes, sessionId: counsellingSessions.id })
+    .from(sessionNotes)
+    .innerJoin(
+      counsellingSessions,
+      eq(sessionNotes.sessionId, counsellingSessions.id)
+    )
+    .where(
+      and(
+        eq(sessionNotes.id, noteId),
+        eq(counsellingSessions.counsellorId, counsellorId)
+      )
+    )
+    .limit(1);
+  if (row == null) throw new Error(`Note not found: ${noteId}`);
   const [note] = await db
     .update(sessionNotes)
     .set({ content, updatedAt: new Date() })
@@ -292,14 +327,10 @@ export async function updateSessionNote(noteId: string, content: string) {
 
 export async function saveSessionSimulation(
   sessionId: string,
+  counsellorId: string,
   overrides: SimulationOverrides
 ) {
-  const [session] = await db
-    .select()
-    .from(counsellingSessions)
-    .where(eq(counsellingSessions.id, sessionId))
-    .limit(1);
-  if (session == null) throw new SessionNotFoundError(sessionId);
+  const session = await requireOwnedSession(sessionId, counsellorId);
   const result = await simulateRecommendationsForStudent(
     session.studentId,
     overrides
@@ -317,14 +348,10 @@ export async function saveSessionSimulation(
 
 export async function saveSessionComparison(
   sessionId: string,
+  counsellorId: string,
   courseIds: string[]
 ) {
-  const [session] = await db
-    .select()
-    .from(counsellingSessions)
-    .where(eq(counsellingSessions.id, sessionId))
-    .limit(1);
-  if (session == null) throw new SessionNotFoundError(sessionId);
+  const session = await requireOwnedSession(sessionId, counsellorId);
   const { recommendations } = await getRecommendationsForStudent(session.studentId);
   const byId = new Map(recommendations.map((rec) => [rec.courseId, rec]));
   const missing = courseIds.filter((id) => !byId.has(id));
