@@ -88,7 +88,7 @@ export const courses = pgTable(
     name: text("name").notNull(),
     degreeType: text("degree_type").notNull(),
     field: text("field").notNull(),
-    durationMonths: integer("duration_months").notNull(),
+    durationMonths: integer("duration_months"),
     // Tuition is nullable: an unpublished tuition must stay unknown (which
     // the scoring engine treats as neutral) rather than masquerading as 0.
     tuitionAmount: numeric("tuition_amount", { precision: 12, scale: 2, mode: "number" }),
@@ -102,6 +102,8 @@ export const courses = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
     minGpa: numeric("min_gpa", { precision: 3, scale: 2, mode: "number" }),
+    /** Scale the minimum GPA is expressed on (e.g. 4 for 3.0/4.0). */
+    minGpaScale: integer("min_gpa_scale"),
     minIeltsOverall: numeric("min_ielts_overall", { precision: 2, scale: 1, mode: "number" }),
     minIeltsWriting: numeric("min_ielts_writing", { precision: 2, scale: 1, mode: "number" }),
     minIeltsReading: numeric("min_ielts_reading", { precision: 2, scale: 1, mode: "number" }),
@@ -149,6 +151,14 @@ export const courses = pgTable(
       "courses_living_cost_amount_period_consistency",
       sql`(${table.livingCostAmount} IS NULL) = (${table.livingCostPeriod} IS NULL)`
     ),
+    check(
+      "courses_min_gpa_scale_positive",
+      sql`${table.minGpaScale} IS NULL OR ${table.minGpaScale} > 0`
+    ),
+    check(
+      "courses_min_toefl_overall_range",
+      sql`${table.minToeflOverall} IS NULL OR (${table.minToeflOverall} >= 0 AND ${table.minToeflOverall} <= 120)`
+    ),
   ]
 );
 
@@ -164,11 +174,14 @@ export const students = pgTable(
     degree: text("degree").notNull(),
     field: text("field").notNull(),
     gpa: numeric("gpa", { precision: 3, scale: 2, mode: "number" }).notNull(),
+    /** Scale the GPA value is expressed on (e.g. 10 for 8.4/10). */
+    gpaScale: integer("gpa_scale"),
     ieltsOverall: numeric("ielts_overall", { precision: 2, scale: 1, mode: "number" }),
     ieltsWriting: numeric("ielts_writing", { precision: 2, scale: 1, mode: "number" }),
     ieltsReading: numeric("ielts_reading", { precision: 2, scale: 1, mode: "number" }),
     ieltsListening: numeric("ielts_listening", { precision: 2, scale: 1, mode: "number" }),
     ieltsSpeaking: numeric("ielts_speaking", { precision: 2, scale: 1, mode: "number" }),
+    toeflOverall: integer("toefl_overall"),
     /**
      * BUDGET SEMANTICS: the student's maximum TOTAL budget for the complete
      * study programme, including tuition AND living costs combined.
@@ -186,7 +199,17 @@ export const students = pgTable(
     workExperienceMonths: integer("work_experience_months"),
     ...timestamps,
   },
-  (table) => [index("students_name_idx").on(table.name)]
+  (table) => [
+    index("students_name_idx").on(table.name),
+    check(
+      "students_gpa_scale_positive",
+      sql`${table.gpaScale} IS NULL OR ${table.gpaScale} > 0`
+    ),
+    check(
+      "students_toefl_overall_range",
+      sql`${table.toeflOverall} IS NULL OR (${table.toeflOverall} >= 0 AND ${table.toeflOverall} <= 120)`
+    ),
+  ]
 );
 
 // ---------------------------------------------------------------------------
