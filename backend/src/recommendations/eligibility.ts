@@ -1,3 +1,5 @@
+import { compareGpa, formatGpa } from "./gpa.js";
+import { compareIntakes } from "./intake.js";
 import type {
   Course,
   EligibilityResult,
@@ -10,14 +12,16 @@ import { backgroundMatches } from "./normalize.js";
 /**
  * Hard eligibility evaluation (pure function — no I/O, no randomness).
  *
- * Rules:
  * - A failed requirement  → "ineligible".
  * - A requirement that cannot be evaluated because data is missing → "unknown".
- * - UNKNOWN IS NOT INELIGIBLE. Missing information preserves the course so a
- *   future "Next Best Question" feature can ask for it.
- * - Intake mismatch is a strong negative signal (warning), never ineligibility,
- *   because the profile has no "intake is mandatory" flag yet.
- * - Academic background matching is intentionally naive (see `backgroundMatches`).
+ * - UNKNOWN IS NOT INELIGIBLE.
+ * - GPA is compared on normalized (value/scale) values; a missing or
+ *   malformed scale makes the check UNKNOWN.
+ * - IELTS and TOEFL are ALTERNATIVE English requirements: satisfying one
+ *   accepted requirement satisfies English. Cross-test conversion is never
+ *   performed.
+ * - Intake mismatch is a strong negative signal (warning), never
+ *   ineligibility. Open/rolling intakes match everything.
  */
 
 const IELTS_SECTIONS = [
@@ -32,6 +36,10 @@ const IELTS_SECTIONS = [
 ] as const;
 
 type SectionKey = (typeof IELTS_SECTIONS)[number]["key"];
+
+function formatScore(value: number | null): string {
+  return value == null ? "unknown" : String(value);
+}
 
 export function evaluateEligibility(
   student: StudentProfile,
@@ -50,63 +58,99 @@ export function evaluateEligibility(
     warnings.push(warning);
   };
 
-  // -- GPA ---------------------------------------------------------------
+  // -- GPA (scale-aware) ---------------------------------------------------
   if (course.minGpa == null) {
     reasons.push({
       type: "positive",
       category: "gpa",
       message: "The course specifies no minimum GPA.",
     });
-  } else if (student.gpa == null) {
-    markUnknown({
-      type: "warning",
-      category: "gpa",
-      message:
-        "Student GPA is unknown, so the GPA requirement cannot be evaluated.",
-    });
-  } else if (student.gpa < course.minGpa) {
-    markIneligible({
-      type: "warning",
-      category: "gpa",
-      message: `Student GPA ${student.gpa} is below the required minimum of ${course.minGpa}.`,
-    });
   } else {
+    const verdict = compareGpa(student.gpa, course.minGpa);
+    if (verdict === "pass") {
+      reasons.push({
+        type: "positive",
+        category: "gpa",
+        message: `Student GPA ${formatGpa(student.gpa)} meets the required minimum of ${formatGpa(course.minGpa)}.`,
+      });
+    } else if (verdict === "fail") {
+      markIneligible({
+        type: "warning",
+        category: "gpa",
+        message: `Student GPA ${formatGpa(student.gpa)} is below the required minimum of ${formatGpa(course.minGpa)}.`,
+      });
+    } else {
+      markUnknown({
+        type: "warning",
+        category: "gpa",
+        message:
+          "GPA scale information is incomplete, so the GPA requirement cannot be evaluated.",
+      });
+    }
+  }
+
+  // -- English: IELTS and TOEFL are alternatives -----------------------------
+  const ieltsRequired = course.minIeltsOverall != null;
+  const toeflRequired = course.minToeflOverall != null;
+  const ieltsMet =
+    ieltsRequired &&
+    student.ielts.overall != null &&
+    student.ielts.overall >= (course.minIeltsOverall ?? Number.POSITIVE_INFINITY);
+  const toeflMet =
+    toeflRequired &&
+    student.toeflOverall != null &&
+    student.toeflOverall >= (course.minToeflOverall ?? Number.POSITIVE_INFINITY);
+  const ieltsFailed =
+    ieltsRequired &&
+    student.ielts.overall != null &&
+    !ieltsMet;
+  const toeflFailed =
+    toeflRequired &&
+    student.toeflOverall != null &&
+    !toeflMet;
+
+  if (!ieltsRequired && !toeflRequired) {
     reasons.push({
       type: "positive",
-      category: "gpa",
-      message: `Student GPA ${student.gpa} meets the required minimum of ${course.minGpa}.`,
+      category: "ielts",
+      message: "The course specifies no minimum English test score.",
+    });
+  } else if (ieltsMet || toeflMet) {
+    const met: string[] = [];
+    if (ieltsMet) met.push(`IELTS ${student.ielts.overall}`);
+    if (toeflMet) met.push(`TOEFL ${student.toeflOverall}`);
+    reasons.push({
+      type: "positive",
+      category: "ielts",
+      message: `English requirement satisfied (${met.join(" and ")}).`,
+    });
+  } else if (ieltsFailed || toeflFailed) {
+    const failed: string[] = [];
+    if (ieltsFailed) {
+      failed.push(
+        `IELTS ${student.ielts.overall} below the required ${formatScore(course.minIeltsOverall)}`
+      );
+    }
+    if (toeflFailed) {
+      failed.push(
+        `TOEFL ${student.toeflOverall} below the required ${formatScore(course.minToeflOverall)}`
+      );
+    }
+    markIneligible({
+      type: "warning",
+      category: "ielts",
+      message: `English requirement not met: ${failed.join("; ")}.`,
+    });
+  } else {
+    markUnknown({
+      type: "warning",
+      category: "ielts",
+      message:
+        "Student English test scores are unknown, so the requirement cannot be evaluated.",
     });
   }
 
-  // -- IELTS overall ------------------------------------------------------
-  if (course.minIeltsOverall == null) {
-    reasons.push({
-      type: "positive",
-      category: "ielts",
-      message: "The course specifies no minimum IELTS overall score.",
-    });
-  } else if (student.ielts.overall == null) {
-    markUnknown({
-      type: "warning",
-      category: "ielts",
-      message:
-        "Student IELTS overall score is unknown, so the requirement cannot be evaluated.",
-    });
-  } else if (student.ielts.overall < course.minIeltsOverall) {
-    markIneligible({
-      type: "warning",
-      category: "ielts",
-      message: `Student IELTS ${student.ielts.overall} is below the required minimum of ${course.minIeltsOverall}.`,
-    });
-  } else {
-    reasons.push({
-      type: "positive",
-      category: "ielts",
-      message: `Student IELTS ${student.ielts.overall} meets the required minimum of ${course.minIeltsOverall}.`,
-    });
-  }
-
-  // -- IELTS sections ------------------------------------------------------
+  // -- IELTS sections (unchanged, IELTS-specific) -------------------------------
   for (const section of IELTS_SECTIONS) {
     const required = section.getMin(course);
     if (required == null) continue;
@@ -132,7 +176,7 @@ export function evaluateEligibility(
     }
   }
 
-  // -- Work experience ------------------------------------------------------
+  // -- Work experience ----------------------------------------------------------
   if (!course.workExperienceRequired) {
     reasons.push({
       type: "positive",
@@ -165,7 +209,7 @@ export function evaluateEligibility(
     });
   }
 
-  // -- Intake (strong signal, never ineligibility) ---------------------------
+  // -- Intake (compatibility, never ineligibility) ----------------------------------
   if (student.preferredIntake == null) {
     reasons.push({
       type: "positive",
@@ -179,21 +223,32 @@ export function evaluateEligibility(
       message:
         "The course has no intake data, so availability cannot be evaluated.",
     });
-  } else if (course.intakes.includes(student.preferredIntake)) {
-    reasons.push({
-      type: "positive",
-      category: "intake",
-      message: `The preferred intake "${student.preferredIntake}" is offered.`,
-    });
   } else {
-    markUnknown({
-      type: "warning",
-      category: "intake",
-      message: `The preferred intake "${student.preferredIntake}" is not offered (available: ${course.intakes.join(", ")}). Treated as a strong negative signal, not ineligibility.`,
-    });
+    const outcomes = course.intakes.map((entry) =>
+      compareIntakes(student.preferredIntake ?? "", entry)
+    );
+    if (outcomes.includes("match")) {
+      reasons.push({
+        type: "positive",
+        category: "intake",
+        message: `The preferred intake "${student.preferredIntake}" is compatible with the course intakes.`,
+      });
+    } else if (outcomes.every((o) => o === "mismatch")) {
+      markUnknown({
+        type: "warning",
+        category: "intake",
+        message: `The preferred intake "${student.preferredIntake}" is not offered (available: ${course.intakes.join(", ")}). Treated as a strong negative signal, not ineligibility.`,
+      });
+    } else {
+      markUnknown({
+        type: "warning",
+        category: "intake",
+        message: `Intake compatibility with "${student.preferredIntake}" cannot be determined from the course data.`,
+      });
+    }
   }
 
-  // -- Academic background (naive, transparent) ------------------------------
+  // -- Academic background (naive, transparent) -------------------------------------
   if (course.academicBackgrounds.length === 0) {
     markUnknown({
       type: "warning",

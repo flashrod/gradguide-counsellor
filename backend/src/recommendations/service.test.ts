@@ -17,11 +17,13 @@ const dbStudentRow: DbStudent = {
   degree: "B.Tech Computer Science",
   field: "Computer Science",
   gpa: 8.4,
+  gpaScale: 10,
   ieltsOverall: 7.5,
   ieltsWriting: 7.0,
   ieltsReading: 7.5,
   ieltsListening: 8.0,
   ieltsSpeaking: 7.0,
+  toeflOverall: null,
   budgetAmount: 3500000,
   budgetCurrency: "INR",
   careerGoal: "AI / Machine Learning",
@@ -46,6 +48,7 @@ const dbCourseRow: DbCourse = {
   livingCostCurrency: "GBP",
   livingCostPeriod: "annual",
   minGpa: 8.0,
+  minGpaScale: 10,
   minIeltsOverall: 7.0,
   minIeltsWriting: 6.5,
   minIeltsReading: 6.5,
@@ -80,7 +83,7 @@ describe("DB boundary mapping (no database required)", () => {
   it("maps a student row to the domain shape", () => {
     expect(toDomainStudent(dbStudentRow)).toMatchObject({
       id: "student-1",
-      gpa: 8.4,
+      gpa: { value: 8.4, scale: 10 },
       ielts: { overall: 7.5, writing: 7.0 },
       budgetAmount: 3500000,
       budgetCurrency: "INR",
@@ -94,7 +97,7 @@ describe("DB boundary mapping (no database required)", () => {
       universityName: "Test University",
       universityCountry: "UK",
       tuitionPeriod: "annual",
-      minGpa: 8.0,
+      minGpa: { value: 8.0, scale: 10 },
     });
   });
 });

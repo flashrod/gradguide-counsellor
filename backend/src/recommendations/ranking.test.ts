@@ -41,14 +41,14 @@ describe("rankRecommendations", () => {
   it("excludes definitively ineligible courses", () => {
     const ranked = rankRecommendations(makeStudent(), [
       makeCourse({ id: "ok" }),
-      makeCourse({ id: "too-low-gpa", minGpa: 9.9 }),
+      makeCourse({ id: "too-low-gpa", minGpa: { value: 9.9, scale: 10 } }),
     ]);
     expect(ranked.map((r) => r.courseId)).toEqual(["ok"]);
   });
 
   it("keeps unknown courses visible with warnings", () => {
     const ranked = rankRecommendations(
-      makeStudent({ gpa: null }),
+      makeStudent({ gpa: { value: null, scale: null } }),
       [makeCourse({ id: "unknown-gpa" })]
     );
     expect(ranked).toHaveLength(1);
@@ -71,7 +71,7 @@ describe("rankRecommendations", () => {
 
   it("returns an empty list when every course is ineligible", () => {
     expect(
-      rankRecommendations(makeStudent(), [makeCourse({ minGpa: 9.9 })])
+      rankRecommendations(makeStudent(), [makeCourse({ minGpa: { value: 9.9, scale: 10 } })])
     ).toEqual([]);
   });
 });
@@ -82,7 +82,7 @@ describe("recommendation consistency", () => {
     const courses = [
       makeCourse({ id: "course-1" }),
       makeCourse({ id: "course-2", tuitionAmount: 50000 }),
-      makeCourse({ id: "course-3", minGpa: 9.9 }),
+      makeCourse({ id: "course-3", minGpa: { value: 9.9, scale: 10 } }),
       makeCourse({ id: "course-4", intakes: ["January 2028"] }),
     ];
     const runs = Array.from({ length: 5 }, () =>

@@ -8,6 +8,8 @@ import type {
   ScoreBreakdown,
   StudentProfile,
 } from "./types.js";
+import { formatGpa, normalizeGpa } from "./gpa.js";
+import { compareIntakes } from "./intake.js";
 import { clampScore, normalize, tokenize } from "./normalize.js";
 
 /**
@@ -53,19 +55,21 @@ interface CostResult {
 
 function periodMultiplier(
   period: CostPeriod,
-  durationMonths: number
+  durationMonths: number | null
 ): number | null {
-  const years = Math.max(1, Math.ceil(durationMonths / 12));
-  const semesters = Math.max(1, Math.ceil(durationMonths / 6));
   switch (period) {
-    case "annual":
-      return years;
     case "total":
       return 1;
+    case "annual":
     case "semester":
-      return semesters;
-    case "monthly":
+    case "monthly": {
+      // Annual/semester/monthly amounts cannot be totalized without a known
+      // duration — return null instead of fabricating one.
+      if (durationMonths == null) return null;
+      if (period === "annual") return Math.max(1, Math.ceil(durationMonths / 12));
+      if (period === "semester") return Math.max(1, Math.ceil(durationMonths / 6));
       return durationMonths;
+    }
     default:
       return null;
   }
@@ -80,16 +84,17 @@ function periodMultiplier(
 export function calculateEstimatedTotalCost(course: Course): CostResult {
   const warnings: Evidence[] = [];
   const months =
-    Number.isFinite(course.durationMonths) && course.durationMonths > 0
-      ? Math.floor(course.durationMonths)
+    Number.isFinite(course.durationMonths) &&
+    (course.durationMonths ?? 0) > 0
+      ? Math.floor(course.durationMonths ?? 0)
       : null;
   if (months == null) {
     warnings.push({
       type: "warning",
       category: "budget",
-      message: "Course duration is missing or invalid, so total cost cannot be estimated.",
+      message:
+        "Course duration is unknown, so period-based costs (annual/semester/monthly) cannot be totalized.",
     });
-    return { cost: null, warnings };
   }
 
   const part = (
@@ -175,7 +180,9 @@ export function calculateAcademicFit(
   const warnings: Evidence[] = [];
 
   let gpaPart: number;
-  if (student.gpa == null || course.minGpa == null) {
+  const studentNorm = normalizeGpa(student.gpa);
+  const minimumNorm = normalizeGpa(course.minGpa);
+  if (studentNorm == null || minimumNorm == null) {
     gpaPart = NEUTRAL_SCORE;
     warnings.push({
       type: "warning",
@@ -184,15 +191,17 @@ export function calculateAcademicFit(
         "GPA information is incomplete, so academic fit uses a neutral score.",
     });
   } else {
-    // 70 for barely meeting the minimum, +15 per GPA point above, capped.
-    gpaPart = clampScore(70 + (student.gpa - course.minGpa) * 15);
+    // 70 for barely meeting the minimum on the normalized 0–1 scale,
+    // +150 per normalized point above (identical to the old +15/GPA-point
+    // on a 10-point scale when both sides share a scale), capped at 100.
+    gpaPart = clampScore(70 + (studentNorm - minimumNorm) * 150);
     reasons.push({
       type: "positive",
       category: "academic",
       message:
-        student.gpa >= course.minGpa + 1
-          ? "GPA comfortably exceeds the course minimum requirement."
-          : "GPA meets the course minimum requirement.",
+        studentNorm >= minimumNorm + 0.1
+          ? `GPA ${formatGpa(student.gpa)} comfortably exceeds the course minimum of ${formatGpa(course.minGpa)}.`
+          : `GPA ${formatGpa(student.gpa)} meets the course minimum of ${formatGpa(course.minGpa)}.`,
     });
   }
 
@@ -408,20 +417,31 @@ export function calculateIntakeFit(
     });
     return { score: NEUTRAL_SCORE, reasons, warnings };
   }
-  if (course.intakes.includes(student.preferredIntake)) {
+  const outcomes = course.intakes.map((entry) =>
+    compareIntakes(student.preferredIntake ?? "", entry)
+  );
+  if (outcomes.includes("match")) {
     reasons.push({
       type: "positive",
       category: "intake",
-      message: `The preferred intake "${student.preferredIntake}" is offered.`,
+      message: `The preferred intake "${student.preferredIntake}" is compatible with the course intakes.`,
     });
     return { score: 100, reasons, warnings };
+  }
+  if (outcomes.every((o) => o === "mismatch")) {
+    warnings.push({
+      type: "warning",
+      category: "intake",
+      message: `The preferred intake "${student.preferredIntake}" is not offered by this course.`,
+    });
+    return { score: 40, reasons, warnings };
   }
   warnings.push({
     type: "warning",
     category: "intake",
-    message: `The preferred intake "${student.preferredIntake}" is not offered by this course.`,
+    message: `Intake compatibility with "${student.preferredIntake}" cannot be determined, so intake fit uses a neutral score.`,
   });
-  return { score: 40, reasons, warnings };
+  return { score: NEUTRAL_SCORE, reasons, warnings };
 }
 
 export function eligibilityScore(status: EligibilityStatus): number {

@@ -99,6 +99,54 @@ describe("calculateEstimatedTotalCost", () => {
   });
 });
 
+describe("calculateEstimatedTotalCost — unknown duration", () => {
+  it("returns null for annual tuition with unknown duration", () => {
+    const { cost, warnings } = calculateEstimatedTotalCost(
+      makeCourse({ durationMonths: null })
+    );
+    expect(cost).toBeNull();
+    expect(warnings.some((w) => w.message.includes("duration"))).toBe(true);
+  });
+
+  it("still uses total tuition with unknown duration", () => {
+    const { cost } = calculateEstimatedTotalCost(
+      makeCourse({
+        durationMonths: null,
+        tuitionAmount: 24300,
+        tuitionCurrency: "CAD",
+        tuitionPeriod: "total",
+        livingCostAmount: null,
+        livingCostCurrency: null,
+        livingCostPeriod: null,
+      })
+    );
+    expect(cost).toEqual({ amount: 24300, currency: "CAD" });
+  });
+
+  it("treats zero duration as unknown, never as zero cost", () => {
+    const { cost } = calculateEstimatedTotalCost(
+      makeCourse({ durationMonths: 0 })
+    );
+    expect(cost).toBeNull();
+  });
+
+  it("scores budget neutral when duration is unknown", () => {
+    const { score } = calculateBudgetFit(
+      makeStudent({ budgetAmount: 100000, budgetCurrency: "GBP" }),
+      makeCourse({
+        durationMonths: null,
+        tuitionAmount: 28500,
+        tuitionCurrency: "GBP",
+        tuitionPeriod: "annual",
+        livingCostAmount: null,
+        livingCostCurrency: null,
+        livingCostPeriod: null,
+      })
+    );
+    expect(score).toBe(70);
+  });
+});
+
 describe("calculateBudgetFit", () => {
   const gbpStudent = (budget: number) =>
     makeStudent({ budgetAmount: budget, budgetCurrency: "GBP" });
@@ -232,19 +280,19 @@ describe("calculateIntakeFit", () => {
 describe("calculateAcademicFit", () => {
   it("rewards comfortably exceeding the minimum more than barely meeting it", () => {
     const high = calculateAcademicFit(
-      makeStudent({ gpa: 9.5 }),
-      makeCourse({ minGpa: 8.0 })
+      makeStudent({ gpa: { value: 9.5, scale: 10 } }),
+      makeCourse({ minGpa: { value: 8.0, scale: 10 } })
     );
     const bare = calculateAcademicFit(
-      makeStudent({ gpa: 8.0 }),
-      makeCourse({ minGpa: 8.0 })
+      makeStudent({ gpa: { value: 8.0, scale: 10 } }),
+      makeCourse({ minGpa: { value: 8.0, scale: 10 } })
     );
     expect(high.score).toBeGreaterThan(bare.score);
   });
 
   it("is neutral with a warning when GPA is missing", () => {
     const { warnings } = calculateAcademicFit(
-      makeStudent({ gpa: null }),
+      makeStudent({ gpa: { value: null, scale: null } }),
       makeCourse()
     );
     expect(warnings.length).toBeGreaterThan(0);
@@ -293,7 +341,7 @@ describe("calculateScore", () => {
 
   it("never returns NaN on malformed input", () => {
     const student = makeStudent({
-      gpa: NaN,
+      gpa: { value: NaN, scale: 10 },
       budgetAmount: NaN,
       preferredCountries: [],
       preferredIntake: null,
