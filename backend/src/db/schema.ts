@@ -15,6 +15,8 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { authUser } from "./auth-schema.js";
+
 /**
  * GradGuide Copilot — relational schema (Milestone 2).
  *
@@ -224,8 +226,12 @@ export const counsellingSessions = pgTable(
     studentId: uuid("student_id")
       .notNull()
       .references(() => students.id, { onDelete: "cascade" }),
-    // Plain string until authentication lands (later milestone).
-    counsellorId: text("counsellor_id").notNull(),
+    // Authenticated counsellor identity (FK to better-auth user).
+    // Deleting a counsellor is blocked while sessions reference them —
+    // history is never silently orphaned or reassigned.
+    counsellorId: text("counsellor_id")
+      .notNull()
+      .references(() => authUser.id),
     startedAt: timestamp("started_at", {
       withTimezone: true,
       mode: "date",
@@ -452,3 +458,18 @@ export type SessionSimulation = typeof sessionSimulations.$inferSelect;
 export type NewSessionSimulation = typeof sessionSimulations.$inferInsert;
 export type SessionComparison = typeof sessionComparisons.$inferSelect;
 export type NewSessionComparison = typeof sessionComparisons.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// better-auth tables (owned by the auth library; included here so they flow
+// through the versioned migrations — see db/auth-schema.ts)
+// ---------------------------------------------------------------------------
+
+export {
+  authAccount,
+  authSession,
+  authVerification,
+  type AuthUser,
+} from "./auth-schema.js";
+
+/** Re-exported for seed/tests that reference the counsellor table. */
+export { authUser };
