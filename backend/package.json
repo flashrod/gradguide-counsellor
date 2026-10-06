@@ -14,7 +14,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:check": "tsx -e \"import('./src/db/utils.ts').then(async (m) => { await m.checkDatabaseConnection(); console.log('database ok'); const { closePool } = await import('./src/db/index.ts'); await closePool(); })\"",
     "ingest:demo": "tsx src/ingestion/demo.ts",
-    "ingest": "tsx src/ingestion/cli.ts"
+    "ingest": "tsx src/ingestion/cli.ts",
+    "catalogue:report": "tsx src/ingestion/qualityReport.ts"
   },
   "dependencies": {
     "better-auth": "^1.3.9",

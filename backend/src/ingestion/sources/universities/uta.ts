@@ -15,6 +15,9 @@ export const utaSource = new CuratedUniversitySource({
     {
       url: "https://catalog.uta.edu/engineering/computer/graduate/computer-science-thesis-ms/",
       title: "Computer Science MS",
+      // Catalog states no program length; the only "year" figure is the
+      // 4-year bachelor's prerequisite, not the MS duration.
+      suppressFields: ["duration"],
     },
     // NOTE: data-science-ms/ was evaluated and SKIPPED — the page yields
     // identity only, with all requirements behind linked sub-pages.

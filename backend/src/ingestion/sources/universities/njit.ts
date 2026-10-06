@@ -18,7 +18,10 @@ export const njitSource = new CuratedUniversitySource({
       title: "Computer Science MS",
       // The only GPA figure on this page concerns good standing, not
       // admission — suppressed rather than misread as a cutoff.
-      suppressFields: ["gpa"],
+      // Tuition table mixes online / Jersey City / Newark resident /
+      // non-resident AY rates; single-figure extraction cannot attribute
+      // the international on-campus cost, so tuition stays unknown.
+      suppressFields: ["gpa", "tuition"],
     },
     {
       url: "https://cs.njit.edu/ms-cybersecurity",
@@ -26,7 +29,7 @@ export const njitSource = new CuratedUniversitySource({
       programName: "Cybersecurity MS",
       degreeType: "MS",
       field: "Cybersecurity",
-      suppressFields: ["gpa"],
+      suppressFields: ["gpa", "tuition"],
     },
     {
       url: "https://cs.njit.edu/ms-software-engineering",
@@ -34,7 +37,7 @@ export const njitSource = new CuratedUniversitySource({
       programName: "Software Engineering MS",
       degreeType: "MS",
       field: "Software Engineering",
-      suppressFields: ["gpa"],
+      suppressFields: ["gpa", "tuition"],
     },
   ],
 });

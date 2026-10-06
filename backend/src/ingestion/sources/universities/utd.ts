@@ -16,6 +16,9 @@ export const utdSource = new CuratedUniversitySource({
     {
       url: "https://academics.utdallas.edu/fact-sheets/ecs/ms-computer-science/",
       title: "Computer Science MS",
+      // Fact sheet states prerequisite course counts ("2 semesters of
+      // calculus"), not the MS duration — extraction would misread them.
+      suppressFields: ["duration"],
     },
     // NOTE: the graduate catalog Software Engineering page was evaluated
     // and SKIPPED — its duration (20 months, executive track) and GPA

@@ -20,7 +20,10 @@ export const buffaloSource = new CuratedUniversitySource({
       programName: "Computer Science MS",
       degreeType: "MS",
       field: "Computer Science",
-      suppressFields: ["gpa"],
+      // FAQ states no program length (the only "year" figure governs
+      // financial-document recency) and no tuition (the only figure is
+      // the $100 application fee).
+      suppressFields: ["gpa", "duration", "tuition"],
     },
   ],
 });

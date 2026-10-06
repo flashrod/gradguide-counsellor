@@ -41,5 +41,12 @@ export const depaulSource = new CuratedUniversitySource({
       degreeType: "MS",
       field: "Artificial Intelligence",
     },
+    {
+      url: "https://www.cdm.depaul.edu/academics/Pages/MS-in-Cybersecurity.aspx",
+      title: "Cybersecurity MS",
+      programName: "Cybersecurity MS",
+      degreeType: "MS",
+      field: "Cybersecurity",
+    },
   ],
 });

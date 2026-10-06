@@ -19,5 +19,12 @@ export const gmuSource = new CuratedUniversitySource({
       degreeType: "MS",
       field: "Computer Science",
     },
+    {
+      url: "https://cec.gmu.edu/program/data-analytics-engineering-ms",
+      title: "Data Analytics Engineering MS",
+      programName: "Data Analytics Engineering MS",
+      degreeType: "MS",
+      field: "Data Science",
+    },
   ],
 });

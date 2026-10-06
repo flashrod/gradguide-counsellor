@@ -17,5 +17,12 @@ export const liverpoolSource = new CuratedUniversitySource({
       url: "https://www.liverpool.ac.uk/courses/computer-science-msc",
       title: "Computer Science MSc",
     },
+    {
+      url: "https://www.liverpool.ac.uk/courses/advanced-data-science-and-artificial-intelligence-msc",
+      title: "Advanced Data Science and Artificial Intelligence MSc",
+      programName: "Advanced Data Science and Artificial Intelligence MSc",
+      degreeType: "MSc",
+      field: "Data Science",
+    },
   ],
 });

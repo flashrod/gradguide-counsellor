@@ -19,6 +19,10 @@ export const fsuSource = new CuratedUniversitySource({
       programName: "Computer Science MS",
       degreeType: "MS",
       field: "Computer Science",
+      // Requirements page states no program length; year-figures describe
+      // employment history ("3 years") and funding offers ("1-year"),
+      // not the MS duration.
+      suppressFields: ["duration"],
     },
   ],
 });

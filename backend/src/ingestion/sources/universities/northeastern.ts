@@ -40,5 +40,12 @@ export const northeasternSource = new CuratedUniversitySource({
       degreeType: "MS",
       field: "Computer Science",
     },
+    {
+      url: "https://www.khoury.northeastern.edu/programs/cybersecurity-ms/",
+      title: "Cybersecurity MS",
+      programName: "Cybersecurity MS",
+      degreeType: "MS",
+      field: "Cybersecurity",
+    },
   ],
 });

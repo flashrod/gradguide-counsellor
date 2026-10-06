@@ -20,5 +20,19 @@ export const bristolSource = new CuratedUniversitySource({
       degreeType: "MSc",
       field: "Computer Science",
     },
+    {
+      url: "https://www.bristol.ac.uk/study/postgraduate/taught/msc-data-science",
+      title: "Data Science MSc",
+      programName: "Data Science MSc",
+      degreeType: "MSc",
+      field: "Data Science",
+    },
+    {
+      url: "https://www.bristol.ac.uk/study/postgraduate/taught/msc-artificial-intelligence",
+      title: "Artificial Intelligence MSc",
+      programName: "Artificial Intelligence MSc",
+      degreeType: "MSc",
+      field: "Artificial Intelligence",
+    },
   ],
 });

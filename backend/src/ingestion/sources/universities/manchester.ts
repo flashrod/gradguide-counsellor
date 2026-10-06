@@ -16,5 +16,19 @@ export const manchesterSource = new CuratedUniversitySource({
       url: "https://www.manchester.ac.uk/study/masters/courses/list/21573/msc-advanced-computer-science/",
       title: "Advanced Computer Science MSc",
     },
+    {
+      url: "https://www.manchester.ac.uk/study/masters/courses/list/21574/msc-artificial-intelligence",
+      title: "Artificial Intelligence MSc",
+      programName: "Artificial Intelligence MSc",
+      degreeType: "MSc",
+      field: "Artificial Intelligence",
+    },
+    {
+      url: "https://www.manchester.ac.uk/study/masters/courses/list/22195/msc-data-science-and-artificial-intelligence-computer-science-data-informatics",
+      title: "Data Science and Artificial Intelligence MSc",
+      programName: "Data Science and Artificial Intelligence MSc",
+      degreeType: "MSc",
+      field: "Data Science",
+    },
   ],
 });

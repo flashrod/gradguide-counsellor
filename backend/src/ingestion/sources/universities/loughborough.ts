@@ -19,6 +19,9 @@ export const loughboroughSource = new CuratedUniversitySource({
       programName: "Computer Science MSc",
       degreeType: "MSc",
       field: "Computer Science",
+      // Country-equivalency tables name GPAs like UWI 1st (3.6); the
+      // universal requirement is a 2:1, so no numeric GPA is extracted.
+      suppressFields: ["gpa"],
     },
     {
       url: "https://www.lboro.ac.uk/study/postgraduate/masters-degrees/advanced-computer-science/",
@@ -26,6 +29,7 @@ export const loughboroughSource = new CuratedUniversitySource({
       programName: "Advanced Computer Science MSc",
       degreeType: "MSc",
       field: "Computer Science",
+      suppressFields: ["gpa"],
     },
     {
       url: "https://www.lboro.ac.uk/study/postgraduate/masters-degrees/artificial-intelligence/",
@@ -33,6 +37,7 @@ export const loughboroughSource = new CuratedUniversitySource({
       programName: "Artificial Intelligence MSc",
       degreeType: "MSc",
       field: "Artificial Intelligence",
+      suppressFields: ["gpa"],
     },
   ],
 });

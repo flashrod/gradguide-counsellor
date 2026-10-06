@@ -261,32 +261,99 @@ record, bannered "Snapshot from [date]".
 "Historical session artifacts are snapshots and are not recomputed from
 the current course catalogue."
 
-## Current Catalogue (Milestone 12, Wave 1: US + UK)
+## Current Catalogue (Milestone 12C, Wave 2.5: quality & coverage)
 
-US: 16 universities, 32 programs. UK: 14 universities, 27 programs.
-Total: 30 universities, 59 programs (plus labelled demo seed data).
+US: 16 universities, 35 programs. UK: 14 universities, 36 programs.
+Canada: 12 universities, 19 programs. Germany: 9 universities, 16 programs.
+Total: 51 universities, 106 programs (plus labelled demo seed data).
 
-US: RIT (5), Northeastern (5), DePaul (4), Drexel (4), NJIT (3), UTSA,
-UNO, FSU, UTD, Buffalo, UIC, UTA, MST, UML, UIUC, GMU (1 each).
-UK: Southampton, Exeter, Sheffield, Loughborough (3 each);
-Liverpool, Leeds, Glasgow, MMU, Greenwich (2 each);
-Portsmouth, Bristol, York, Keele (1 each).
+US: Northeastern (6), RIT (5), DePaul (5), Drexel (4), NJIT (3), GMU (2),
+UTSA, UNO, FSU, UTD, Buffalo, UIC, UTA, MST, UML, UIUC (1 each).
+UK: Southampton, Exeter, Sheffield, Loughborough, Manchester, Bristol,
+Keele, Portsmouth (3 each); Liverpool, Leeds, Glasgow, MMU,
+Greenwich, York (2 each).
+Canada: Toronto, McGill, Dalhousie, Guelph, SFU, Queen's (2 each);
+UBC (2); Manitoba, Windsor, Western, Waterloo, York (1 each).
+Germany: TUM (4); TU Berlin, HPI, Saarland, Stuttgart (2 each);
+Bonn, KIT, RWTH, TU Dresden (1 each).
+
+Wave 2.5 prioritized correctness over count: 12 wrong values were
+removed (Drexel $300k scholarship, Buffalo $100 fee, UTA 48 mo,
+UTD 8 mo, FSU 36 mo, UIUC 60 mo + IELTS 5.0, York TOEFL 59,
+Keele/Loughborough country-specific GPAs, NJIT unattributable table
+rate, Portsmouth £60 textbook costs) and 21 legacy `duration = 0`
+sentinels were re-ingested to null. Coverage therefore fell in places
+(US tuition 16%→0%, UK GPA 15%→0%) — every removed value was proven
+wrong, and UNKNOWN is preferable to a wrong value.
+
+Wave 2 targeted ~10–12 Canadian and ~8–10 German universities with
+25–35 / 20–30 programs; program counts landed below target (19 / 16)
+because only reliably parseable official pages were accepted — no
+fabricated records to hit the number.
 
 - Discovery: College Scorecard (US institution cross-checks) plus
   curated official program pages; sitemaps where useful. Aggregators
   only for discovery — course facts always come from official pages.
-- Commands: `npm run ingest -- --country=US|UK [--limit=N] [--dry-run]`,
+  Canadian discovery: official university graduate-program pages
+  (department + graduate-calendar sources). German discovery: official
+  English program pages (CIT/faculty sites, study-program portals).
+- Commands: `npm run ingest -- --country=US|UK|CA|DE [--limit=N] [--dry-run]`,
   `npm run ingest -- --all`. Bounded curated lists; per-origin politeness
   with robots.txt + crawl-delay honored; one failure never aborts a run.
 - Unknown policy: missing stays null (tuition, GPA, IELTS/TOEFL, intake,
   duration). UK 2:1 classifications are never converted to GPA. Soft
   minima ("no strict requirement") are suppressed, never hardened.
   Per-credit tuition without credit basis stays unknown.
+- Germany: grades (1.0–4.0 scale) are never converted to GPA — the
+  requirement stays unknown with the original wording in
+  `eligibility_notes`. ECTS subject prerequisites, TestDaF/DSH/telc/C1
+  certificates, and semester contributions are preserved as evidence,
+  never mapped to GPA/IELTS fields. Public universities correctly show
+  no tuition (semester contributions are not annualized into tuition).
+  Winter/Summer Semester intakes are kept as stated, never forced to Fall.
+- Canada: bare "$" resolves to CAD; international tuition preferred where
+  stated; per-credit pricing without a credit basis stays unknown.
+- Suppressions (page-specific, documented in the adapter): Toronto MScAC
+  GPA (B+ letter standing only); Dalhousie/Western/SFU durations (admin
+  deadlines or prerequisite descriptions, not program lengths).
+- Parser hardening from the Wave 2 audit: durations resolve by text
+  position after standard-context preference (a "valid for 5 years" note
+  no longer beats the stated "16-month program"); numbers adjacent to
+  administrative codes ("Department Code: 78") are never scores; "do not
+  accept … starts" drops negated intakes.
+- Data completeness (real rows, Wave 2.5): Canada — tuition 11%,
+  GPA 26%, IELTS 21%, TOEFL 16%, intake 37%, duration 26%.
+  Germany — tuition 0% (correct: no-tuition public programs), GPA 0%
+  (correct: no grade conversion), IELTS/TOEFL 13% each, intake 63%,
+  duration 75%; 12 programs carry ECTS/language evidence in
+  eligibility notes. US — tuition 0% (per-credit pricing dominates;
+  unattributable tables suppressed), GPA 51%, IELTS 34%, TOEFL 43%,
+  intake 29%, duration 34%. UK — tuition 69%, GPA 0% (2:1
+  classifications preserved as notes, never converted), IELTS 58%,
+  TOEFL 17%, intake 56%, duration 78%.
+- Wave 2.5 parser hardening (each with regression tests): employment
+  history never becomes duration ("3 years employment"); prerequisite
+  undergraduate lengths never become master's durations ("4-year
+  bachelor's"); subsection scores without "the" ("59 in Writing") and
+  other-exam-led numbers ("PTE Academic 60", "5 on the OEAI Test") never
+  become TOEFL/IELTS; non-refundable application fees never become
+  tuition; window-truncated exam names no longer escape attribution.
+- Quality report: `npm run catalogue:report
+  --workspace=gradguide-backend` prints totals, per-country counts,
+  coverage, suspicious records (fee-like tuition, legacy zero
+  durations, off-scale English minima), and >90-day stale records.
+  Currently: 106 real programs, 0 suspicious, 0 stale.
 - Dedupe: normalized university + program + country identity plus URL
-  canonicalization; re-runs update instead of duplicating.
+  canonicalization; re-runs update instead of duplicating (verified:
+  second CA/DE runs inserted 0, updated 35).
 - Known gaps: fee-table structures needing layout parsing (York),
   multi-track pages (UTD SE skipped), SPA/bot-walled sites (Birmingham,
   Cardiff, QMUL skipped), TOEFL new 1–6 scale stored only when iBT-range.
+  Wave 2 skips: Alberta/Calgary (403/bot-walled), Concordia
+  (requirements behind estimators), LMU English Informatics (404),
+  Windsor MAC / Western MDA second programs (official URLs churn);
+  Stuttgart intakes carry deadline-month noise (May/October/April
+  alongside the correct Winter/Summer).
 
 "Official university program pages are the preferred source of truth for
 course-level information."
