@@ -18,7 +18,19 @@ export interface UniversityAdapterConfig {
   universityCity: string | null;
   universityWebsite: string | null;
   sourceName: string;
-  programPages: { url: string; title: string }[];
+  programPages: {
+    url: string;
+    title: string;
+    programName?: string;
+    degreeType?: string;
+    field?: string;
+    /**
+     * Fields the extractor must leave unknown even when numbers are found
+     * (e.g. a page that explicitly disclaims a hard cutoff, or durations
+     * that mix full-time and part-time arms inseparably).
+     */
+    suppressFields?: ("gpa" | "ielts" | "toefl" | "duration" | "tuition")[];
+  }[];
 }
 
 export class CuratedUniversitySource implements UniversityCourseSource {

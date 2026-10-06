@@ -68,13 +68,19 @@ export function toNewCourse(
 async function findExistingCourseId(
   candidate: CourseCandidate
 ): Promise<{ courseId: string; universityId: string } | null> {
-  const wanted = courseIdentityKey(candidate.universityName, candidate.courseName);
+  const wanted = courseIdentityKey(
+    candidate.universityName,
+    candidate.courseName,
+    candidate.universityCountry
+  );
   const rows = await db
     .select({ course: courses, university: universities })
     .from(courses)
     .innerJoin(universities, eq(courses.universityId, universities.id));
   for (const { course, university } of rows) {
-    if (courseIdentityKey(university.name, course.name) === wanted) {
+    if (
+      courseIdentityKey(university.name, course.name, university.country) === wanted
+    ) {
       return { courseId: course.id, universityId: university.id };
     }
   }

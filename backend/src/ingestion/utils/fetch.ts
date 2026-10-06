@@ -33,7 +33,7 @@ export class RobotsBlockedError extends Error {
   }
 }
 
-const robotsCache = new Map<string, string[]>();
+const robotsCache = new Map<string, { disallows: string[]; crawlDelayMs: number }>();
 const lastRequestAt = new Map<string, number>();
 
 function sleep(ms: number): Promise<void> {
@@ -50,7 +50,17 @@ function pathOf(url: string): string {
 
 /** Minimal robots.txt parser: returns Disallow paths for `*` + our token. */
 export function parseRobotsDisallows(robotsTxt: string): string[] {
+  return parseRobots(robotsTxt).disallows;
+}
+
+interface RobotsRules {
+  disallows: string[];
+  crawlDelayMs: number;
+}
+
+export function parseRobots(robotsTxt: string): RobotsRules {
   const disallows: string[] = [];
+  let crawlDelayMs = 0;
   let applies = false;
   for (const rawLine of robotsTxt.split("\n")) {
     const line = rawLine.split("#")[0]?.trim() ?? "";
@@ -65,34 +75,40 @@ export function parseRobotsDisallows(robotsTxt: string): string[] {
         "gradguide-copilot-ingestion/0.1".startsWith(agent);
     } else if (applies && field?.toLowerCase() === "disallow" && value !== "") {
       disallows.push(value);
+    } else if (applies && field?.toLowerCase() === "crawl-delay") {
+      const seconds = Number(value);
+      if (Number.isFinite(seconds) && seconds > 0) {
+        crawlDelayMs = Math.min(seconds * 1000, 30_000);
+      }
     }
   }
-  return disallows;
+  return { disallows, crawlDelayMs };
 }
 
 export function isPathAllowed(path: string, disallows: string[]): boolean {
   return !disallows.some((rule) => rule !== "" && path.startsWith(rule));
 }
 
-async function robotsDisallowsFor(origin: string): Promise<string[]> {
+async function robotsRulesFor(origin: string): Promise<{ disallows: string[]; crawlDelayMs: number }> {
   const cached = robotsCache.get(origin);
   if (cached != null) return cached;
+  const empty = { disallows: [], crawlDelayMs: 0 };
   try {
     const response = await fetch(`${origin}/robots.txt`, {
       headers: { "User-Agent": INGESTION_USER_AGENT },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!response.ok) {
-      robotsCache.set(origin, []);
-      return [];
+      robotsCache.set(origin, empty);
+      return empty;
     }
-    const rules = parseRobotsDisallows(await response.text());
+    const rules = parseRobots(await response.text());
     robotsCache.set(origin, rules);
     return rules;
   } catch {
     // If robots.txt itself is unreachable, proceed (fail-open, still polite).
-    robotsCache.set(origin, []);
-    return [];
+    robotsCache.set(origin, empty);
+    return empty;
   }
 }
 
@@ -103,13 +119,14 @@ function isTransient(error: unknown, status: number | null): boolean {
 
 export async function fetchHtml(url: string): Promise<string> {
   const origin = originOf(url);
-  const disallows = await robotsDisallowsFor(origin);
-  if (!isPathAllowed(pathOf(url), disallows)) {
+  const rules = await robotsRulesFor(origin);
+  if (!isPathAllowed(pathOf(url), rules.disallows)) {
     throw new RobotsBlockedError(url);
   }
 
+  const gap = Math.max(POLITENESS_GAP_MS, rules.crawlDelayMs);
   const sinceLast = Date.now() - (lastRequestAt.get(origin) ?? 0);
-  if (sinceLast < POLITENESS_GAP_MS) await sleep(POLITENESS_GAP_MS - sinceLast);
+  if (sinceLast < gap) await sleep(gap - sinceLast);
 
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

@@ -14,13 +14,22 @@ const PATTERNS: { pattern: RegExp; toMonths: (n: number) => number }[] = [
 
 export function parseDurationMonths(text: string): number | null {
   const lowered = text.toLowerCase();
-  if (/credit\s*hours?/.test(lowered)) return null;
   for (const { pattern, toMonths } of PATTERNS) {
-    const match = pattern.exec(lowered);
-    if (match?.[1] == null) continue;
-    const months = toMonths(Number(match[1]));
-    if (Number.isFinite(months) && months > 0 && months <= 120) return months;
-    return null;
+    const re = new RegExp(pattern.source, "gi");
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(lowered)) !== null) {
+      // "30 credit hours" is not a duration — skip credit-adjacent matches
+      // without discarding the whole text.
+      const nearby = lowered.slice(
+        Math.max(0, match.index - 30),
+        match.index + match[0].length + 30
+      );
+      if (/credit\s*hours?/.test(nearby)) continue;
+      if (match[1] == null) continue;
+      const months = toMonths(Number(match[1]));
+      if (Number.isFinite(months) && months > 0 && months <= 120) return months;
+      return null;
+    }
   }
   return null;
 }

@@ -33,17 +33,28 @@ const PERIOD_PATTERNS: { pattern: RegExp; period: CostPeriod | "per-credit" }[] 
 ];
 
 export function parseTuition(text: string): ParsedTuition | null {
-  const amountMatch = /(US\$|CA\$|C\$|[$£€₹])\s*([\d,]+(?:\.\d{1,2})?)/.exec(text);
-  if (amountMatch == null) return null;
-  const amount = Number(amountMatch[2]?.replace(/,/g, ""));
-  if (!Number.isFinite(amount) || amount < 0) return null;
-
-  const symbol = amountMatch[1] ?? "$";
-  const currency = CURRENCY_SYMBOLS[symbol] ?? "USD";
+  const moneyRe = /(US\$|CA\$|C\$|[$£€₹])\s*([\d,]+(?:\.\d{1,2})?)/g;
+  const matches: { amount: number; currency: string }[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = moneyRe.exec(text)) !== null) {
+    const amount = Number(match[2]?.replace(/,/g, ""));
+    if (!Number.isFinite(amount) || amount < 0) continue;
+    const symbol = match[1] ?? "$";
+    matches.push({ amount, currency: CURRENCY_SYMBOLS[symbol] ?? "USD" });
+  }
+  if (matches.length === 0) return null;
+  // UK fee tables list Home first, International second: with several
+  // figures in an international context, the last one is the international
+  // figure. Otherwise the first figure wins.
+  const picked =
+    /international|overseas/i.test(text) && matches.length > 1
+      ? matches[matches.length - 1]
+      : matches[0];
+  if (picked == null) return null;
 
   const lowered = text.toLowerCase();
   for (const { pattern, period } of PERIOD_PATTERNS) {
-    if (pattern.test(lowered)) return { amount, currency, period };
+    if (pattern.test(lowered)) return { ...picked, period };
   }
-  return { amount, currency, period: "total" };
+  return { ...picked, period: "total" };
 }

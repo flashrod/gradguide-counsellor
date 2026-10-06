@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { CourseCandidate } from "./types.js";
-import { courseIdentityKey, isDuplicateCourse } from "./utils/dedupe.js";
+import {
+  courseIdentityKey,
+  isDuplicateCourse,
+  normalizeUrl,
+} from "./utils/dedupe.js";
 import { validateCourseCandidate } from "./validation/courseSchema.js";
 
 function makeCandidate(overrides: Partial<CourseCandidate> = {}): CourseCandidate {
@@ -102,5 +106,47 @@ describe("dedupe", () => {
 
   it("produces stable identity keys", () => {
     expect(courseIdentityKey("RIT", "MS CS")).toBe(courseIdentityKey("rit", "MS CS"));
+  });
+
+  it("keeps same-named programmes in different countries distinct", () => {
+    expect(
+      isDuplicateCourse(
+        { universityName: "Test University", courseName: "MS Computer Science", country: "USA" },
+        { universityName: "Test University", courseName: "MS Computer Science", country: "UK" }
+      )
+    ).toBe(false);
+  });
+
+  it("matches the same programme with tracking-free identity", () => {
+    expect(
+      isDuplicateCourse(
+        { universityName: "RIT", courseName: "M.S. Computer Science", country: "USA" },
+        { universityName: "rit", courseName: "MS Computer Science", country: "USA" }
+      )
+    ).toBe(true);
+  });
+});
+
+describe("normalizeUrl", () => {
+  it("strips tracking params and fragments", () => {
+    expect(
+      normalizeUrl("https://www.rit.edu/study/computer-science-ms?utm_source=x#top")
+    ).toBe("https://www.rit.edu/study/computer-science-ms");
+  });
+
+  it("treats trailing-slash variants as identical", () => {
+    expect(normalizeUrl("https://example.edu/ms/")).toBe(
+      normalizeUrl("https://example.edu/ms")
+    );
+  });
+
+  it("keeps meaningful query params", () => {
+    expect(normalizeUrl("https://example.edu/search?program=ms")).toBe(
+      "https://example.edu/search?program=ms"
+    );
+  });
+
+  it("returns null for malformed URLs", () => {
+    expect(normalizeUrl("not a url")).toBeNull();
   });
 });

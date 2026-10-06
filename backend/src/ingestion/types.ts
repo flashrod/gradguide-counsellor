@@ -61,6 +61,10 @@ export interface UniversityCandidate {
 export interface CoursePageCandidate {
   url: string;
   title: string | null;
+  programName?: string | null;
+  degreeType?: string | null;
+  field?: string | null;
+  suppressFields?: ("gpa" | "ielts" | "toefl" | "duration" | "tuition")[];
 }
 
 export interface UniversityCourseSource {

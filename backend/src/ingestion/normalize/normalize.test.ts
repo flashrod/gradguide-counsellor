@@ -54,6 +54,12 @@ describe("parseTuition", () => {
     });
   });
 
+  it("prefers the international figure in home/international pairs", () => {
+    expect(
+      parseTuition("Home / international fees 2026/27 £11,800 / £19,450")
+    ).toEqual({ amount: 19450, currency: "GBP", period: "total" });
+  });
+
   it("returns null when no amount is present", () => {
     expect(parseTuition("Tuition varies by program")).toBeNull();
   });
@@ -100,6 +106,38 @@ describe("requirements parsing", () => {
 
   it("extracts TOEFL", () => {
     expect(parseToefl("TOEFL: 88")).toBe(88);
+  });
+
+  it("extracts reversed-order scores", () => {
+    expect(parseIelts("79 TOEFL iBT / 6.5 IELTS")).toBe(6.5);
+    expect(parseToefl("79 TOEFL iBT / 6.5 IELTS")).toBe(79);
+  });
+
+  it("ignores dates when looking for TOEFL scores", () => {
+    expect(parseToefl("TOEFL taken before 01/21/2026: Minimum score of 80")).toBe(80);
+  });
+
+  it("ignores section scores stated after the number", () => {
+    expect(
+      parseToefl("minimum score of 24 on the speaking subsection")
+    ).toBeNull();
+    expect(parseIelts("IELTS: 6.5")).toBe(6.5);
+  });
+
+  it("ignores worded dates", () => {
+    expect(
+      parseToefl("For exams taken on or after January 21, 2026: 79 TOEFL iBT")
+    ).toBe(79);
+  });
+
+  it("attributes scores to the right exam in mixed listings", () => {
+    const text = "Duolingo (DET): 130 IELTS: 6.5 PTE Academic: 60 TOEFL: 88";
+    expect(parseIelts(text)).toBe(6.5);
+    expect(parseToefl(text)).toBe(88);
+  });
+
+  it("does not match number prefixes", () => {
+    expect(parseGpa("GPA of 8.4 on a 10-point scale")).toBeNull();
   });
 
   it("returns null when requirements are missing", () => {

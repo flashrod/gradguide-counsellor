@@ -96,4 +96,12 @@ describe("extractTuitionSentence", () => {
       extractTuitionSentence("Graduate tuition is $50,000 per year.")
     ).toContain("$50,000");
   });
+
+  it("ignores salary figures", () => {
+    expect(
+      extractTuitionSentence(
+        "Graduate salaries were £10,500 more than non-graduates in 2023."
+      )
+    ).toBeNull();
+  });
 });
