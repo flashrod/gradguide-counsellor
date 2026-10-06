@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   DEMO_STUDENT_ID,
   getNextQuestion,
@@ -22,12 +24,26 @@ import { WhatIfPanel } from "@/components/what-if-panel";
  */
 export const dynamic = "force-dynamic";
 
-export default async function WorkspacePage() {
+export default async function WorkspacePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ student?: string }>;
+}) {
+  const { student: requested } = await searchParams;
+  const studentId =
+    requested != null &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested)
+      ? requested
+      : DEMO_STUDENT_ID;
+  // Server Components have no browser cookies: forward them so the
+  // counsellor-scoped session banner can load. Public calls stay as-is.
+  const { cookies } = await import("next/headers");
+  const cookie = (await cookies()).toString();
   const [{ student }, data, nextQuestion, { sessions }] = await Promise.all([
-    getStudent(DEMO_STUDENT_ID),
-    getRecommendations(DEMO_STUDENT_ID),
-    getNextQuestion(DEMO_STUDENT_ID),
-    listSessions(DEMO_STUDENT_ID),
+    getStudent(studentId),
+    getRecommendations(studentId),
+    getNextQuestion(studentId),
+    listSessions(studentId, { cookie }),
   ]);
   const activeSession =
     sessions.find((session) => session.status === "ACTIVE") ?? null;
@@ -37,6 +53,14 @@ export default async function WorkspacePage() {
       <PageHeader
         title="Counsellor Workspace"
         subtitle="Make faster, more consistent course recommendations."
+        actions={
+          <Link
+            href="/workspace/resume"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700"
+          >
+            Import resume
+          </Link>
+        }
       />
 
       <SessionBar

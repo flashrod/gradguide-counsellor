@@ -9,7 +9,10 @@ import { DEMO_STUDENT_ID, listSessions } from "@/lib/api";
 export const dynamic = "force-dynamic";
 
 export default async function SessionsPage() {
-  const { sessions } = await listSessions(DEMO_STUDENT_ID);
+  const { cookies } = await import("next/headers");
+  const { sessions } = await listSessions(DEMO_STUDENT_ID, {
+    cookie: (await cookies()).toString(),
+  });
 
   return (
     <div className="space-y-6">

@@ -176,7 +176,9 @@ export const students = pgTable(
     name: text("name").notNull(),
     degree: text("degree").notNull(),
     field: text("field").notNull(),
-    gpa: numeric("gpa", { precision: 3, scale: 2, mode: "number" }).notNull(),
+    // Nullable since Milestone 13: resume-created profiles often have no
+    // confirmed GPA yet. The engine already treats null as unknown.
+    gpa: numeric("gpa", { precision: 3, scale: 2, mode: "number" }),
     /** Scale the GPA value is expressed on (e.g. 10 for 8.4/10). */
     gpaScale: integer("gpa_scale"),
     ieltsOverall: numeric("ielts_overall", { precision: 2, scale: 1, mode: "number" }),
@@ -191,8 +193,10 @@ export const students = pgTable(
      * No currency conversion is performed yet — amounts are compared
      * as-stated until a later milestone adds conversion.
      */
-    budgetAmount: numeric("budget_amount", { precision: 12, scale: 2, mode: "number" }).notNull(),
-    budgetCurrency: varchar("budget_currency", { length: 3 }).notNull(),
+    // Nullable since Milestone 13: resumes never state budgets. The engine
+    // already treats null as unknown (never disqualifying).
+    budgetAmount: numeric("budget_amount", { precision: 12, scale: 2, mode: "number" }),
+    budgetCurrency: varchar("budget_currency", { length: 3 }),
     careerGoal: text("career_goal"),
     preferredCountries: text("preferred_countries")
       .array()
@@ -379,6 +383,49 @@ export const sessionComparisons = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// resume_extractions
+// ---------------------------------------------------------------------------
+
+/**
+ * Resume ingestion artifacts (Milestone 13). One row per upload: file
+ * metadata, extracted text, and the validated structured extraction.
+ * Raw PDFs are never stored — only text + structure.
+ *
+ * `counsellorId` owns the row (same pattern as counselling sessions).
+ * `studentId` links the confirmed target profile, if any; deleting the
+ * student detaches rather than destroying the extraction record.
+ * Status: uploaded | needs_review | confirmed | failed.
+ */
+export const resumeExtractions = pgTable(
+  "resume_extractions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    counsellorId: text("counsellor_id")
+      .notNull()
+      .references(() => authUser.id),
+    studentId: uuid("student_id").references(() => students.id, {
+      onDelete: "set null",
+    }),
+    fileName: text("file_name").notNull(),
+    fileSizeBytes: integer("file_size_bytes").notNull(),
+    pageCount: integer("page_count").notNull(),
+    status: text("status").notNull().default("uploaded"),
+    errorMessage: text("error_message"),
+    rawText: text("raw_text").notNull().default(""),
+    /** Validated ResumeExtraction JSON (Milestone 13 schema). */
+    extraction: jsonb("extraction"),
+    /** Field sources recorded at confirm time, e.g. { gpa: "resume" }. */
+    confirmedFieldSources: jsonb("confirmed_field_sources"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true, mode: "date" }),
+    ...timestamps,
+  },
+  (table) => [
+    index("resume_extractions_counsellor_id_idx").on(table.counsellorId),
+    index("resume_extractions_student_id_idx").on(table.studentId),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // relations
 // ---------------------------------------------------------------------------
 
@@ -458,6 +505,8 @@ export type SessionSimulation = typeof sessionSimulations.$inferSelect;
 export type NewSessionSimulation = typeof sessionSimulations.$inferInsert;
 export type SessionComparison = typeof sessionComparisons.$inferSelect;
 export type NewSessionComparison = typeof sessionComparisons.$inferInsert;
+export type ResumeExtractionRow = typeof resumeExtractions.$inferSelect;
+export type NewResumeExtractionRow = typeof resumeExtractions.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // better-auth tables (owned by the auth library; included here so they flow

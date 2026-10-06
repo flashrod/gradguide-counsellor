@@ -7,6 +7,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import { loadEnv } from "./env.js";
 import { recommendationsRouter } from "./routes/recommendations.js";
+import { resumesRouter } from "./routes/resumes.js";
 import { coursesRouter } from "./routes/courses.js";
 import { nextQuestionRouter } from "./routes/next-question.js";
 import { sessionsRouter } from "./routes/sessions.js";
@@ -38,6 +39,7 @@ app.use("/api", nextQuestionRouter);
 app.use("/api", sessionsRouter);
 app.use("/api", simulationRouter);
 app.use("/api", studentsRouter);
+app.use("/api", resumesRouter);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });

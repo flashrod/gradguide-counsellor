@@ -36,7 +36,10 @@ export default async function ComparePage({
     }))
   );
 
-  const { sessions } = await listSessions(DEMO_STUDENT_ID);
+  const { cookies } = await import("next/headers");
+  const { sessions } = await listSessions(DEMO_STUDENT_ID, {
+    cookie: (await cookies()).toString(),
+  });
   const activeSessionId =
     sessions.find((session) => session.status === "ACTIVE")?.id ?? null;
 

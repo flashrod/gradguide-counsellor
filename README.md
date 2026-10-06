@@ -498,6 +498,41 @@ migration 0002; duration `0` means "unpublished" (see `eligibilityNotes`).
 Next: scale to 20+ universities with per-site adapters + an LLM fallback
 for unstructured pages.
 
+## Resume Ingestion (Milestone 13)
+
+Upload → extract → counsellor review → confirm → existing engine.
+Nothing reaches a student profile without explicit confirmation.
+
+- Upload: `POST /api/resumes/upload` (multipart, PDF magic bytes,
+  5 MB limit, multer memory storage). pdfjs-dist extracts text per
+  page; textless/scanned PDFs become `failed` rows with guidance,
+  never empty profiles. Raw PDFs are never persisted — only metadata,
+  extracted text, and the validated structure.
+- Extraction: deterministic section/regex parsing (`ResumeExtractor`
+  interface, so a future LLM can plug in later). GPA keeps value+scale
+  (scale unknown stays unknown); percentages never become GPA;
+  semester figures never become overall GPA; skills match only inside
+  SKILLS sections ("Interested in AI" stays prose); budget, country,
+  intake, and career goal are never inferred.
+- Mapping: `ResumeExtraction → ProfileCandidate` with per-field
+  evidence and `notInferred` list. Precedence is structural:
+  only explicitly confirmed fields are written, so manual data is
+  never silently overwritten (COUNSELLOR > RESUME > UNKNOWN).
+- Confirm: `POST /api/resumes/:id/confirm` creates or patches a
+  student transactionally and records field sources + confirmedAt/By.
+  Review UI at `/workspace/resume` shows provenance badges, GPA
+  alternatives, and existing-vs-resume conflicts (Keep/Use).
+- Ownership: extraction rows carry `counsellorId` (FK, 404s across
+  counsellors); students stay public per the existing boundary.
+- Verified end-to-end in a real browser: upload → review → confirm →
+  69 ranked recommendations, working NBQ/What-If/session flow.
+  ~250ms per resume, no queues.
+- Drive-by fix this milestone: `sessionsRouter.use(requireAuth)` ran
+  for every `/api/*` request (prefix-mounted router), 401ing public
+  routes and breaking all server-rendered session reads. Auth is now
+  per-route; the frontend also sends cookies (`credentials: include`,
+  `next/headers` forwarding) so browser session flows work.
+
 ## Run locally
 
 ```bash

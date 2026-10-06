@@ -39,7 +39,8 @@ export default async function SessionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const detail = await getSessionDetail(id);
+  const { cookies } = await import("next/headers");
+  const detail = await getSessionDetail(id, { cookie: (await cookies()).toString() });
   const { session } = detail;
   const student = (session.studentSnapshot ?? {}) as Record<string, unknown>;
   const gpa = student["gpa"] as { value?: unknown; scale?: unknown } | undefined;

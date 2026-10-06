@@ -4,11 +4,13 @@ import type {
   ApiCourseDetailsResponse,
   ApiNextQuestionResponse,
   ApiRecommendationsResponse,
+  ApiResumeDetail,
   ApiSessionDetail,
   ApiSessionSummary,
   ApiSimulationOverrides,
   ApiSimulationResponse,
   ApiStudentResponse,
+  ApiStudentSummary,
 } from "./api-types";
 
 /**
@@ -41,10 +43,24 @@ export class ApiError extends Error {
   }
 }
 
-async function getJson<T>(path: string): Promise<T> {
+/**
+ * Server Components render without browser cookies, so pages that need
+ * counsellor-scoped data forward them explicitly via `options.cookie`
+ * (read with `next/headers`). Browser calls authenticate with
+ * `credentials: "include"` instead.
+ */
+export interface ApiRequestOptions {
+  cookie?: string;
+}
+
+async function getJson<T>(path: string, options?: ApiRequestOptions): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${backendBaseUrl()}${path}`, { cache: "no-store" });
+    response = await fetch(`${backendBaseUrl()}${path}`, {
+      cache: "no-store",
+      credentials: "include",
+      ...(options?.cookie != null ? { headers: { cookie: options.cookie } } : {}),
+    });
   } catch {
     throw new ApiError(0, "Recommendation service is unreachable.");
   }
@@ -114,6 +130,7 @@ export async function simulateRecommendations(  studentId: string,
       `${backendBaseUrl()}/api/students/${studentId}/recommendations/simulate`,
       {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ overrides }),
       }
@@ -179,12 +196,16 @@ export async function getCatalogueMeta(): Promise<ApiCatalogueMeta> {
   return getJson<ApiCatalogueMeta>("/api/courses/meta");
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+async function postJson<T>(path: string, body: unknown, options?: ApiRequestOptions): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${backendBaseUrl()}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options?.cookie != null ? { cookie: options.cookie } : {}),
+      },
       body: JSON.stringify(body),
     });
   } catch {
@@ -212,15 +233,17 @@ export async function createSession(
 }
 
 export async function listSessions(
-  studentId: string
+  studentId: string,
+  options?: ApiRequestOptions
 ): Promise<{ sessions: ApiSessionSummary[] }> {
-  return getJson(`/api/students/${studentId}/sessions`);
+  return getJson(`/api/students/${studentId}/sessions`, options);
 }
 
 export async function getSessionDetail(
-  sessionId: string
+  sessionId: string,
+  options?: ApiRequestOptions
 ): Promise<ApiSessionDetail> {
-  return getJson(`/api/sessions/${sessionId}`);
+  return getJson(`/api/sessions/${sessionId}`, options);
 }
 
 export async function endSession(
@@ -248,4 +271,108 @@ export async function saveSessionComparison(
   courseIds: string[]
 ): Promise<unknown> {
   return postJson(`/api/sessions/${sessionId}/comparisons`, { courseIds });
+}
+
+export interface ResumeConfirmProfile {
+  degree?: string;
+  field?: string;
+  gpaValue?: number;
+  gpaScale?: number;
+  ieltsOverall?: number;
+  toeflOverall?: number;
+  workExperienceMonths?: number;
+  careerGoal?: string | null;
+  budgetAmount?: number | null;
+  budgetCurrency?: string | null;
+  preferredCountries?: string[];
+  preferredIntake?: string | null;
+}
+
+export interface ResumeConfirmBody {
+  studentId?: string;
+  createStudent?: { name: string };
+  profile: ResumeConfirmProfile;
+  fieldSources: Record<string, "resume" | "manual">;
+}
+
+/**
+ * Resume + student management (Milestone 13). Unlike the public catalogue
+ * calls above, these are counsellor-scoped, so cookies ride along.
+ */
+async function authedFetch(path: string, init: RequestInit): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetch(`${backendBaseUrl()}${path}`, {
+      ...init,
+      credentials: "include",
+      cache: "no-store",
+    });
+  } catch {
+    throw new ApiError(0, "Recommendation service is unreachable.");
+  }
+  return response;
+}
+
+function errorMessage(status: number, fallback: string): never {
+  throw new ApiError(status, fallback);
+}
+
+export async function uploadResume(
+  file: File,
+  studentId?: string
+): Promise<{ resume: ApiResumeDetail }> {
+  const form = new FormData();
+  form.append("resume", file, file.name);
+  if (studentId != null) form.append("studentId", studentId);
+  const response = await authedFetch("/api/resumes/upload", {
+    method: "POST",
+    body: form,
+  });
+  if (response.status === 400 || response.status === 422) {
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new ApiError(response.status, data?.error ?? "Could not process the resume.");
+  }
+  if (response.status === 404) throw new ApiError(404, "Student not found.");
+  if (!response.ok) errorMessage(response.status, "Recommendation service returned an error.");
+  return (await response.json()) as { resume: ApiResumeDetail };
+}
+
+export async function getResumeDetail(
+  id: string
+): Promise<{ resume: ApiResumeDetail }> {
+  const response = await authedFetch(`/api/resumes/${id}`, { method: "GET" });
+  if (response.status === 404) throw new ApiError(404, "Resume not found.");
+  if (!response.ok) errorMessage(response.status, "Recommendation service returned an error.");
+  return (await response.json()) as { resume: ApiResumeDetail };
+}
+
+export async function confirmResume(
+  id: string,
+  body: ResumeConfirmBody
+): Promise<{ studentId: string; student: import("./api-types").ApiStudent }> {
+  const response = await authedFetch(`/api/resumes/${id}/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (response.status === 400 || response.status === 404) {
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new ApiError(response.status, data?.error ?? "Could not confirm the profile.");
+  }
+  if (!response.ok) errorMessage(response.status, "Recommendation service returned an error.");
+  return (await response.json()) as {
+    studentId: string;
+    student: import("./api-types").ApiStudent;
+  };
+}
+
+export async function listStudents(): Promise<{ students: ApiStudentSummary[] }> {
+  const response = await authedFetch("/api/students", { method: "GET" });
+  if (response.status === 401) throw new ApiError(401, "Authentication required.");
+  if (!response.ok) errorMessage(response.status, "Recommendation service returned an error.");
+  return (await response.json()) as { students: ApiStudentSummary[] };
 }

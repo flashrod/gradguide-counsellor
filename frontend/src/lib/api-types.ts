@@ -312,3 +312,42 @@ export interface ApiSessionComparison {
   }[];
   createdAt: string;
 }
+
+export interface ApiResumeFieldCandidate {
+  field: string;
+  value: string | number | null;
+  scale: number | null;
+  alternatives: { value: number; scale: number | null; snippet: string }[];
+  source: "resume";
+  status: "needs_review";
+  evidence: string[];
+}
+
+export interface ApiResumeDetail {
+  id: string;
+  studentId: string | null;
+  fileName: string;
+  fileSizeBytes: number;
+  pageCount: number;
+  status: string;
+  errorMessage: string | null;
+  extraction: {
+    personal: { name: string | null; email: string | null; phone: string | null; location: string | null };
+    education: { institution: string | null; degree: string | null; field: string | null; startYear: number | null; endYear: number | null; gpa: { value: number; scale: number | null; kind: string; snippet: string } | null; coursework: string[]; snippet: string }[];
+    experience: { company: string | null; role: string | null; startLabel: string | null; endLabel: string | null; description: string; technologies: string[] }[];
+    projects: { name: string; description: string; technologies: string[] }[];
+    skills: { languages: string[]; frameworks: string[]; databases: string[]; cloudTools: string[]; aiMl: string[]; other: string[] };
+    certifications: { name: string; issuer: string | null }[];
+    achievements: string[];
+  } | null;
+  candidate: { fields: ApiResumeFieldCandidate[]; notInferred: string[] } | null;
+  confirmedFieldSources: Record<string, string> | null;
+  confirmedAt: string | null;
+}
+
+export interface ApiStudentSummary {
+  id: string;
+  name: string;
+  degree: string;
+  field: string;
+}
