@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
 import { db } from "../db/index.js";
 import {
@@ -99,4 +99,143 @@ export async function getCourseDetails(courseId: string): Promise<CourseDetails>
   const row = rows[0];
   if (row == null) throw new CourseNotFoundError(courseId);
   return toCourseDetails(row.course, row.university);
+}
+
+export interface CatalogueFilters {
+  country?: string;
+  field?: string;
+  degree?: string;
+  intake?: string;
+  search?: string;
+  currency?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CatalogueEntry {
+  id: string;
+  courseName: string;
+  universityName: string;
+  country: string;
+  degreeType: string;
+  field: string;
+  durationMonths: number | null;
+  tuitionAmount: number | null;
+  tuitionCurrency: string | null;
+  tuitionPeriod: string | null;
+  intakes: string[];
+  minIeltsOverall: number | null;
+  minToeflOverall: number | null;
+  sourceUrl: string;
+  sourceName: string;
+  lastVerifiedAt: string;
+}
+
+/**
+ * Distinct facet values for catalogue filters. Small catalogue — three
+ * cheap distinct queries instead of a metadata table.
+ */
+export async function catalogueFacets(): Promise<{
+  countries: string[];
+  fields: string[];
+  degrees: string[];
+  currencies: string[];
+}> {
+  const [countries, fields, degrees, currencies] = await Promise.all([
+    db
+      .selectDistinct({ value: universities.country })
+      .from(universities)
+      .orderBy(universities.country),
+    db.selectDistinct({ value: courses.field }).from(courses).orderBy(courses.field),
+    db
+      .selectDistinct({ value: courses.degreeType })
+      .from(courses)
+      .orderBy(courses.degreeType),
+    db
+      .selectDistinct({ value: courses.tuitionCurrency })
+      .from(courses)
+      .orderBy(courses.tuitionCurrency),
+  ]);
+  return {
+    countries: countries.map((r) => r.value),
+    fields: fields.map((r) => r.value),
+    degrees: degrees.map((r) => r.value),
+    currencies: currencies
+      .map((r) => r.value)
+      .filter((v): v is string => v != null),
+  };
+}
+
+/**
+ * Server-side filtered catalogue listing for the Courses explorer UI.
+ * Display data only — no scoring.
+ */
+export async function listCatalogue(
+  filters: CatalogueFilters
+): Promise<{ total: number; courses: CatalogueEntry[] }> {
+  const conditions: (SQL | undefined)[] = [];
+  if (filters.country != null && filters.country !== "") {
+    conditions.push(eq(universities.country, filters.country));
+  }
+  if (filters.field != null && filters.field !== "") {
+    conditions.push(eq(courses.field, filters.field));
+  }
+  if (filters.degree != null && filters.degree !== "") {
+    conditions.push(eq(courses.degreeType, filters.degree));
+  }
+  if (filters.currency != null && filters.currency !== "") {
+    conditions.push(eq(courses.tuitionCurrency, filters.currency));
+  }
+  if (filters.intake != null && filters.intake !== "") {
+    conditions.push(
+      sql`${courses.intakes} && ARRAY[${filters.intake}]::text[]`
+    );
+  }
+  if (filters.search != null && filters.search !== "") {
+    const term = `%${filters.search}%`;
+    conditions.push(
+      or(ilike(courses.name, term), ilike(universities.name, term))
+    );
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const countBase = db
+    .select({ count: sql<number>`count(*)` })
+    .from(courses)
+    .innerJoin(universities, eq(courses.universityId, universities.id));
+  const countRows = await (where != null ? countBase.where(where) : countBase);
+  const total = Number(countRows[0]?.count ?? 0);
+
+  const limit = Math.min(Math.max(filters.limit ?? 50, 1), 200);
+  const offset = Math.max(filters.offset ?? 0, 0);
+  const listBase = db
+    .select({ course: courses, university: universities })
+    .from(courses)
+    .innerJoin(universities, eq(courses.universityId, universities.id));
+  const rows = await (where != null ? listBase.where(where) : listBase)
+    .orderBy(universities.name, courses.name)
+    .limit(limit)
+    .offset(offset);
+
+  return {
+    total,
+    courses: rows.map(({ course, university }) => ({
+      id: course.id,
+      courseName: course.name,
+      universityName: university.name,
+      country: university.country,
+      degreeType: course.degreeType,
+      field: course.field,
+      durationMonths: course.durationMonths,
+      tuitionAmount: course.tuitionAmount,
+      tuitionCurrency: course.tuitionCurrency,
+      tuitionPeriod: course.tuitionPeriod,
+      intakes: [...course.intakes],
+      minIeltsOverall: course.minIeltsOverall,
+      minToeflOverall: course.minToeflOverall,
+      sourceUrl: course.sourceUrl,
+      sourceName: course.sourceName,
+      lastVerifiedAt: course.lastVerifiedAt.toISOString(),
+    })),
+  };
 }

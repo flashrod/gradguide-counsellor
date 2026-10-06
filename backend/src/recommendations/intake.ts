@@ -16,6 +16,8 @@ export interface NormalizedIntake {
   month: number | null;
   year: number | null;
   open: boolean;
+  /** The matched source term (e.g. "Semester 1"), if any. */
+  label: string | null;
 }
 
 const SEASONS: IntakeSeason[] = ["Fall", "Winter", "Spring", "Summer"];
@@ -38,13 +40,22 @@ const MONTHS: { name: string; month: number; season: IntakeSeason }[] = [
 const OPEN_PATTERNS =
   /rolling|year-round|year round|throughout the year|open admission|continuous/i;
 
+const EXTRA_TERMS: { pattern: RegExp; label: string; season: IntakeSeason | null }[] = [
+  { pattern: /\bwinter\s*semester\b|\bwintersemester\b/i, label: "Winter Semester", season: "Winter" },
+  { pattern: /\bsummer\s*semester\b|\bsommersemester\b/i, label: "Summer Semester", season: "Summer" },
+  // Semester numbering is institution-specific: recognized but never
+  // mapped to a season (would overclaim). Identical labels still match.
+  { pattern: /\bsemester\s*1\b/i, label: "Semester 1", season: null },
+  { pattern: /\bsemester\s*2\b/i, label: "Semester 2", season: null },
+];
+
 export function isOpenIntakeText(text: string): boolean {
   return OPEN_PATTERNS.test(text);
 }
 
 export function normalizeIntake(value: string): NormalizedIntake | null {
   if (isOpenIntakeText(value)) {
-    return { season: null, month: null, year: null, open: true };
+    return { season: null, month: null, year: null, open: true, label: null };
   }
   const lowered = value.toLowerCase();
   let season: IntakeSeason | null = null;
@@ -62,10 +73,18 @@ export function normalizeIntake(value: string): NormalizedIntake | null {
       break;
     }
   }
+  let label: string | null = null;
+  for (const extra of EXTRA_TERMS) {
+    if (extra.pattern.test(value)) {
+      label = extra.label;
+      if (season == null) season = extra.season;
+      break;
+    }
+  }
   const yearMatch = /(19|20)\d{2}/.exec(value);
   const year = yearMatch != null ? Number(yearMatch[0]) : null;
-  if (season == null && month == null && year == null) return null;
-  return { season, month, year, open: false };
+  if (season == null && month == null && year == null && label == null) return null;
+  return { season, month, year, open: false, label };
 }
 
 export type IntakeCompatibility = "match" | "mismatch" | "unknown";
@@ -85,6 +104,15 @@ export function compareIntakes(
   if (student == null || course == null) return "unknown";
   if (student.open || course.open) return "match";
   if (
+    student.label != null &&
+    course.label != null &&
+    student.label === course.label &&
+    student.season == null &&
+    course.season == null
+  ) {
+    return "match";
+  }
+  if (
     student.year != null &&
     course.year != null &&
     student.year !== course.year
@@ -97,6 +125,13 @@ export function compareIntakes(
     student.season !== course.season
   ) {
     return "mismatch";
+  }
+  if (
+    student.label != null &&
+    course.label != null &&
+    student.label !== course.label
+  ) {
+    return "unknown";
   }
   return "match";
 }

@@ -92,8 +92,32 @@ describe.skipIf(!process.env["DATABASE_URL"])("counselling sessions (live databa
     expect(Array.isArray(evidence?.reasons)).toBe(true);
     const snapshot = first?.courseSnapshot as { sourceUrl?: string } | null;
     expect(snapshot?.sourceUrl).toMatch(/^https?:\/\//);
-    expect(detail.questions.length).toBeGreaterThan(0);
     expect(detail.session.studentSnapshot).toMatchObject({ id: DEMO_STUDENT_ID });
+  });
+
+  it("snapshots the next-best question for an incomplete profile", async () => {
+    const [temp] = await db
+      .insert(students)
+      .values({
+        name: "Temp Unknown Student",
+        degree: "BSc",
+        field: "Physics",
+        gpa: 7.0,
+        gpaScale: 10,
+        ieltsOverall: null,
+        toeflOverall: null,
+        careerGoal: null,
+        budgetAmount: 50000,
+        budgetCurrency: "USD",
+        preferredCountries: [],
+      })
+      .returning({ id: students.id });
+    if (temp == null) throw new Error("temp student insert failed");
+    const sessionId = await trackSession(temp.id, counsellorA);
+    const detail = await getSessionDetail(sessionId, counsellorA);
+    expect(detail.questions.length).toBeGreaterThan(0);
+    expect(detail.questions[0]?.question.length).toBeGreaterThan(0);
+    await db.delete(students).where(eq(students.id, temp.id));
   });
 
   it("keeps history stable when course data changes", async () => {

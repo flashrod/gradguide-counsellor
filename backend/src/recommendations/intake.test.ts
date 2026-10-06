@@ -13,6 +13,7 @@ describe("normalizeIntake", () => {
       month: null,
       year: null,
       open: false,
+      label: null,
     });
   });
 
@@ -22,6 +23,7 @@ describe("normalizeIntake", () => {
       month: null,
       year: 2027,
       open: false,
+      label: null,
     });
   });
 
@@ -31,6 +33,7 @@ describe("normalizeIntake", () => {
       month: 9,
       year: 2027,
       open: false,
+      label: null,
     });
   });
 
@@ -52,6 +55,20 @@ describe("normalizeIntake", () => {
   it("detects open-intake phrasing", () => {
     expect(isOpenIntakeText("Year-round entry")).toBe(true);
     expect(isOpenIntakeText("Fall entry")).toBe(false);
+  });
+
+  it("maps Winter Semester to Winter without losing the label", () => {
+    expect(normalizeIntake("Winter Semester")).toMatchObject({
+      season: "Winter",
+      label: "Winter Semester",
+    });
+  });
+
+  it("recognizes Semester 1 without claiming a season", () => {
+    expect(normalizeIntake("Semester 1")).toMatchObject({
+      season: null,
+      label: "Semester 1",
+    });
   });
 });
 
@@ -90,5 +107,13 @@ describe("compareIntakes", () => {
 
   it("unparseable entries are unknown", () => {
     expect(compareIntakes("Fall", "Contact us")).toBe("unknown");
+  });
+
+  it("matches identical non-standard terms", () => {
+    expect(compareIntakes("Semester 1", "Semester 1")).toBe("match");
+  });
+
+  it("does not match different non-standard terms", () => {
+    expect(compareIntakes("Semester 1", "Semester 2")).toBe("unknown");
   });
 });
