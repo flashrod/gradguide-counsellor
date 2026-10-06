@@ -47,11 +47,13 @@ const DEGREE_TOKENS: { pattern: RegExp; degreeType: string }[] = [
 ];
 
 const PARENTHETICAL_DEGREE: { pattern: RegExp; degreeType: string }[] = [
-  { pattern: /\(\s*M\.?S\.?\s*\)/, degreeType: "MS" },
-  { pattern: /\(\s*MSc\s*\)/i, degreeType: "MSc" },
+  { pattern: /\(\s*M\.?\s*S\.?\s*c\.?\s*\)/i, degreeType: "MSc" },
+  { pattern: /\(\s*M\.?\s*S\.?\s*\)/, degreeType: "MS" },
   { pattern: /\(\s*MA\s*\)/, degreeType: "MA" },
   { pattern: /\(\s*MBA\s*\)/i, degreeType: "MBA" },
-  { pattern: /\(\s*MEng\s*\)/i, degreeType: "MEng" },
+  // MEng is deliberately non-parenthetical here: unlike the others it is
+  // almost never written "(MEng)" in titles, so any mention claims the type.
+  { pattern: /\bMEng\b/i, degreeType: "MEng" },
   { pattern: /\(\s*Ph\.?D\.?\s*\)/i, degreeType: "PhD" },
 ];
 
@@ -82,7 +84,26 @@ export function extractBackgrounds(text: string): string[] {
   return found;
 }
 
-/** Tuition is only accepted from cost sentences; international figures preferred. */
+/** Verbatim requirement sentences the structured model cannot represent. */
+export function extractNotes(text: string): string[] {
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  const relevant = sentences.filter(
+    (s) =>
+      /\bECTS\b|\b[CL]P\b/i.test(s) ||
+      // \bgrades?\b (not bare "grade") so "postgraduate"/"undergraduate"
+      // background sentences do not become requirement notes.
+      /\bgrades?\b|grading|CGPA|classification|2:[12]|upper second|first class/i.test(s) ||
+      /TestDaF|DSH\b|telc|Goethe|CEFR|C1\b|B2\b/i.test(s)
+  );
+  const notes: string[] = [];
+  for (const sentence of relevant) {
+    const trimmed = sentence.trim();
+    if (trimmed.length < 20 || trimmed.length > 400) continue;
+    if (!notes.includes(trimmed)) notes.push(trimmed);
+    if (notes.length >= 5) break;
+  }
+  return notes;
+}
 export function extractTuitionSentence(text: string): string | null {
   const sentences = text.split(/(?<=[.!?])\s+/);
   const candidates = sentences.filter(
@@ -90,7 +111,7 @@ export function extractTuitionSentence(text: string): string | null {
       /[$£€₹]\s*[\d,]+/.test(s) &&
       (/tuition|fee|cost|pay|per year|per annum|annual|per credit|per semester/i.test(s) ||
         /international|overseas/i.test(s)) &&
-      !/deposit|scholarship|discount|bursary|loan|instalment|installment|application fee|photocop|stationery|textbook|accommodation|living cost|salary|salaries|wage|earn/i.test(s)
+      !/deposit|scholarship|discount|bursary|loan|instalment|installment|application fee|non-refundable|required to apply|photocop|stationery|textbook|accommodation|living cost|salary|salaries|wage|earn|award/i.test(s)
   );
   if (candidates.length === 0) return null;
   const international = candidates.find((s) =>
@@ -167,7 +188,12 @@ function cleanField(field: string): string | null {
 }
 
 function splitDegreeTitle(title: string): { name: string; degreeType: string | null; field: string | null } {
-  const cleaned = title.replace(/\s+/g, " ").trim();
+  const cleaned = title
+    .replace(/\s+/g, " ")
+    .replace(/\bM\.Sc\.?\b/gi, "MSc")
+    .replace(/\bM\.S\.?\b/g, "MS")
+    .replace(/\bPh\.D\.?\b/gi, "PhD")
+    .trim();
   let degreeType: string | null = null;
   let remainder = cleaned;
   for (const { pattern, degreeType: found } of PARENTHETICAL_DEGREE) {
@@ -222,6 +248,42 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
 
   const suppressed = new Set(input.suppressFields ?? []);
   const gpa = suppressed.has("gpa") ? null : parseGpa(text);
+  // Scale, in order of reliability: an explicitly stated scale ("3.2 out
+  // of 4", "4.0 scale", "10-point scale") beats the US-only 4.0 heuristic;
+  // anything else leaves the scale unknown rather than guessed.
+  const explicitScale = (() => {
+    if (gpa == null) return null;
+    // Escape the float: an unescaped "." would match any character.
+    const gpaStr = String(gpa).replace(".", "\\.");
+    if (
+      new RegExp(`${gpaStr}\\s+out of 4(\\.0)?\\b`, "i").test(text)
+    ) {
+      return 4;
+    }
+    if (/\b4\.0\s+scale\b/i.test(text) && gpa <= 4) return 4;
+    if (/\b10(?:\.0)?[-\s]?point\s+scale\b/i.test(text) && gpa <= 10) {
+      return 10;
+    }
+    // Explicit non-standard scales ("3.0/4.33") are honored as stated.
+    const slashScale = new RegExp(
+      `${gpaStr}\\s*/\\s*(\\d+(?:\\.\\d+)?)\\b`
+    ).exec(text);
+    if (slashScale?.[1] != null) {
+      const scale = Number(slashScale[1]);
+      if (Number.isFinite(scale) && scale > 0 && gpa <= scale) {
+        // Scales must be positive integers for storage; anything else
+        // (e.g. 4.33) stays unknown with a note rather than failing.
+        if (!Number.isInteger(scale)) {
+          evidence.push(
+            `gpa scale ${scale} is not representable — left unknown`
+          );
+          return null;
+        }
+        return scale;
+      }
+    }
+    return null;
+  })();
   // Scale heuristic (documented): a GPA minimum at or below 4.0 on a US
   // university page is read as a 4.0-scale value. Anything else leaves the
   // scale unknown rather than guessed.
@@ -231,11 +293,12 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
     );
   }
   const gpaScale =
-    gpa != null &&
+    explicitScale ??
+    (gpa != null &&
     gpa <= 4 &&
     input.universityCountry.toLowerCase() === "usa"
       ? 4
-      : null;
+      : null);
   evidence.push(
     gpa != null ? `gpa: ${gpa}${gpaScale != null ? `/${gpaScale}` : " (scale unknown)"}` : "gpa: not stated"
   );
@@ -244,7 +307,12 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
   const toefl = suppressed.has("toefl") ? null : parseToefl(text);
   evidence.push(toefl != null ? `toefl: ${toefl}` : "toefl: not stated");
 
-  const duration = suppressed.has("duration") ? null : parseDurationMonths(text);
+  const duration = suppressed.has("duration")
+    ? null
+    : parseDurationMonths(
+        text,
+        input.universityCountry.toLowerCase() === "germany" ? 6 : 4
+      );
   evidence.push(duration != null ? `duration: ${duration} months` : "duration: not stated");
 
   const tuitionSentence =
@@ -258,10 +326,23 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
     if (tuition.period === "per-credit") {
       evidence.push("tuition: per-credit pricing without usable basis — left unknown");
     } else {
+      // A bare "$" means the local dollar: resolve via the university's
+      // country rather than defaulting everything to USD.
+      const localCurrency: Record<string, string> = {
+        canada: "CAD",
+        australia: "AUD",
+        ireland: "EUR",
+        uk: "GBP",
+        germany: "EUR",
+        usa: "USD",
+      };
       tuitionAmount = tuition.amount;
-      tuitionCurrency = tuition.currency;
+      tuitionCurrency =
+        tuition.inferredCurrency === true
+          ? (localCurrency[input.universityCountry.toLowerCase()] ?? tuition.currency)
+          : tuition.currency;
       tuitionPeriod = tuition.period;
-      evidence.push(`tuition: ${tuition.amount} ${tuition.currency} ${tuition.period}`);
+      evidence.push(`tuition: ${tuition.amount} ${tuitionCurrency} ${tuition.period}`);
     }
   } else {
     evidence.push("tuition: not stated");
@@ -271,31 +352,82 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
     // Terms only count near scope words ("starts September 2027"): pages
     // often run navigation and prose together without sentence breaks, so
     // whole-sentence scoping would sweep up dissertation summers.
-    const scopeRe =
-      /admit term|intake|start date|starts|next start|entry term|entry date|entry year/gi;
+    const MONTHS = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    // Single source of truth for intake scope words: the window opener
+    // and the bare-month gate must agree, or months in windows opened
+    // by "program start"/"start of" are silently dropped.
+    const SCOPE_WORDS =
+      "admit term|intake|start date|starts|next start|program start|start of|accepts applications|entry term|entry date|entry year";
+    const scopeRe = new RegExp(SCOPE_WORDS, "gi");
     const windows: string[] = [];
     let scopeMatch: RegExpExecArray | null;
     while ((scopeMatch = scopeRe.exec(text)) !== null) {
-      windows.push(
-        text.slice(
-          Math.max(0, scopeMatch.index - 10),
-          scopeMatch.index + scopeMatch[0].length + 120
-        )
-      );
+      const start = Math.max(0, scopeMatch.index - 10);
+      const end = scopeMatch.index + scopeMatch[0].length + 120;
+      windows.push(text.slice(start, end));
       if (scopeMatch[0].length === 0) scopeRe.lastIndex += 1;
     }
     if (windows.length > 0) {
       // Deadline/decision sentences ("Overseas applicants: 12 August")
       // name months that are not intakes — drop them before parsing terms.
-      const usable = windows
-        .flatMap((window) => window.split(/(?<=[.!?])\s+/))
-        .filter(
+      // Likewise drop terms in negated context ("Summer starts are not
+      // offered"). Bare months additionally need a scope word within 40
+      // chars in the same window; seasons pass through (deadline tables
+      // legitimately list terms).
+      const scopeWordRe = new RegExp(SCOPE_WORDS, "i");
+      const collected = new Set<string>();
+      for (const window of windows) {
+        const sentences = window.split(/(?<=[.!?])\s+/).filter(
           (sentence) =>
             !/deadline|decision|apply by|closing date|round \d|applicants?/i.test(
               sentence
             )
         );
-      return { terms: parseIntakes(usable.join(" ")), scoped: true };
+        const usable = sentences.join(" ");
+        for (const term of parseIntakes(usable)) {
+          if (!MONTHS.includes(term)) {
+            const occurrence = usable.search(new RegExp(`\\b${term}\\b`, "i"));
+            if (occurrence === -1) continue;
+            const context = usable.slice(
+              Math.max(0, occurrence - 40),
+              occurrence + term.length + 40
+            );
+            if (
+              /not offered|not available|not accept[^.]{0,60}?\bstarts?\b|no .*?\b(starts?|intake|admission)\b/i.test(
+                context
+              )
+            ) {
+              continue;
+            }
+            collected.add(term);
+            continue;
+          }
+          // Bare month: keep only near a scope word in the same window.
+          const termIndex = usable.search(new RegExp(`\\b${term}\\b`));
+          const scopeIndex = usable.search(scopeWordRe);
+          if (
+            termIndex !== -1 &&
+            scopeIndex !== -1 &&
+            Math.abs(termIndex - scopeIndex) <= 40 + term.length
+          ) {
+            collected.add(term);
+          }
+        }
+      }
+      return { terms: [...collected], scoped: true };
     }
     const sentences = text.split(/(?<=[.!?])\s+/);
     // Fallback: deadline/entry sentences only (never bare months), keeping a
@@ -353,6 +485,7 @@ export function extractCourseCandidate(input: ExtractionInput): CourseCandidate 
     sourceUrl: input.sourceUrl,
     sourceName: input.sourceName,
     lastVerifiedAt: new Date(),
+    notes: extractNotes(text),
     evidence,
   };
 }

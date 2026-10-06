@@ -36,6 +36,12 @@ export interface CourseCandidate {
   sourceUrl: string;
   sourceName: string;
   lastVerifiedAt: Date;
+  /**
+   * Verbatim requirement notes the structured model cannot represent
+   * (ECTS prerequisites, grade scales, non-IELTS/TOEFL certificates).
+   * Preserved as evidence — never parsed into cutoffs.
+   */
+  notes: string[];
   /** Deterministic notes about what was found vs. missing. */
   evidence: string[];
 }

@@ -144,6 +144,44 @@ describe.skipIf(!process.env["DATABASE_URL"])("counselling sessions (live databa
       .where(eq(courses.id, AI_COURSE_ID));
   });
 
+  it("keeps ingested-course snapshots stable across catalogue edits", async () => {
+    const [rit] = await db
+      .select({ id: courses.id })
+      .from(courses)
+      .where(eq(courses.sourceUrl, "https://www.rit.edu/study/computer-science-ms"))
+      .limit(1);
+    if (rit == null) throw new Error("RIT course missing — run ingestion first");
+    const sessionId = await trackSession(DEMO_STUDENT_ID, counsellorA);
+    const before = await getSessionDetail(sessionId, counsellorA);
+    const target = before.recommendations.find((r) => r.courseId === rit.id);
+    expect(target).toBeDefined();
+    const original = JSON.stringify(target);
+    const [originalRow] = await db
+      .select({ tuitionAmount: courses.tuitionAmount, minIeltsOverall: courses.minIeltsOverall })
+      .from(courses)
+      .where(eq(courses.id, rit.id))
+      .limit(1);
+
+    try {
+      await db
+        .update(courses)
+        .set({ tuitionAmount: 12345, minIeltsOverall: 9.0 })
+        .where(eq(courses.id, rit.id));
+
+      const after = await getSessionDetail(sessionId, counsellorA);
+      const reread = after.recommendations.find((r) => r.courseId === rit.id);
+      expect(JSON.stringify(reread)).toBe(original);
+    } finally {
+      await db
+        .update(courses)
+        .set({
+          tuitionAmount: originalRow?.tuitionAmount ?? null,
+          minIeltsOverall: originalRow?.minIeltsOverall ?? null,
+        })
+        .where(eq(courses.id, rit.id));
+    }
+  });
+
   it("lists only the counsellor's own sessions", async () => {
     await trackSession(DEMO_STUDENT_ID, counsellorA);
     await trackSession(DEMO_STUDENT_ID, counsellorB);

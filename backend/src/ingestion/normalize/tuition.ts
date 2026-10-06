@@ -11,6 +11,8 @@ export interface ParsedTuition {
   amount: number;
   currency: string;
   period: CostPeriod | "per-credit";
+  /** True when the currency was defaulted (bare "$"), not stated. */
+  inferredCurrency: boolean;
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -46,11 +48,12 @@ export function parseTuition(text: string): ParsedTuition | null {
   // UK fee tables list Home first, International second: with several
   // figures in an international context, the last one is the international
   // figure. Otherwise the first figure wins.
-  const picked =
+  const pickedRaw =
     /international|overseas/i.test(text) && matches.length > 1
       ? matches[matches.length - 1]
       : matches[0];
-  if (picked == null) return null;
+  if (pickedRaw == null) return null;
+  const picked = { ...pickedRaw, inferredCurrency: pickedRaw.currency === "USD" && !/(US\$|USD)/i.test(text) };
 
   const lowered = text.toLowerCase();
   for (const { pattern, period } of PERIOD_PATTERNS) {

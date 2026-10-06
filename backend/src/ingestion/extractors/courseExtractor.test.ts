@@ -6,9 +6,9 @@ import { describe, expect, it } from "vitest";
 import {
   extractBackgrounds,
   extractCourseCandidate,
+  extractNotes,
   extractTuitionSentence,
 } from "./courseExtractor.js";
-
 const fixtureDir = join(dirname(fileURLToPath(import.meta.url)), "__fixtures__");
 
 function loadRitFixture(): string {
@@ -84,6 +84,22 @@ describe("extractBackgrounds", () => {
   });
 });
 
+describe("extractNotes", () => {
+  it("keeps genuine grade/ECTS/language sentences", () => {
+    const notes = extractNotes(
+      "Applicants need 30 ECTS in Computer Science. A minimum grade of 2.5 is required."
+    );
+    expect(notes.length).toBeGreaterThan(0);
+  });
+
+  it("ignores 'postgraduate'/'undergraduate' background sentences", () => {
+    const notes = extractNotes(
+      "Our postgraduate research community welcomes undergraduate students from all backgrounds."
+    );
+    expect(notes).toEqual([]);
+  });
+});
+
 describe("extractTuitionSentence", () => {
   it("ignores scholarship mentions without cost figures", () => {
     expect(
@@ -103,5 +119,61 @@ describe("extractTuitionSentence", () => {
         "Graduate salaries were £10,500 more than non-graduates in 2023."
       )
     ).toBeNull();
+  });
+
+  it("ignores non-refundable application fees (Wave 2.5: Buffalo)", () => {
+    expect(
+      extractTuitionSentence(
+        "A non-refundable fee of $100 is required to apply for Spring 2025 or later terms."
+      )
+    ).toBeNull();
+  });
+});
+
+describe("extractCourseCandidate (synthetic pages, no network)", () => {
+  const base = {
+    universityName: "Test University",
+    universityCountry: "Canada",
+    universityCity: null,
+    universityWebsite: null,
+    sourceUrl: "https://example.com/ms",
+    sourceName: "Test source",
+  };
+
+  function page(body: string): string {
+    return `<html><body><main><h1>Computer Science MS</h1><p>${body}</p></main></body></html>`;
+  }
+
+  it("drops negated intakes", () => {
+    const candidate = extractCourseCandidate({
+      html: page(
+        "Admit term: Fall. Winter and Summer starts are not offered. Apply for September entry."
+      ),
+      ...base,
+    });
+    expect(candidate.intakes).toContain("Fall");
+    expect(candidate.intakes).not.toContain("Summer");
+    expect(candidate.intakes).not.toContain("Winter");
+  });
+
+  it("drops 'do not accept starts' intakes (Wave 2: MScAC Fall-only)", () => {
+    const candidate = extractCourseCandidate({
+      html: page(
+        "This program has one intake (Fall) only, we do not accept applications for a Winter or Summer start."
+      ),
+      ...base,
+    });
+    expect(candidate.intakes).toContain("Fall");
+    expect(candidate.intakes).not.toContain("Summer");
+    expect(candidate.intakes).not.toContain("Winter");
+  });
+
+  it("reads an explicitly stated GPA scale", () => {
+    const candidate = extractCourseCandidate({
+      html: page("A cumulative GPA of at least 3.2 out of 4 is required."),
+      ...base,
+    });
+    expect(candidate.minimumGpa).toBe(3.2);
+    expect(candidate.minimumGpaScale).toBe(4);
   });
 });

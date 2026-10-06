@@ -45,6 +45,7 @@ export const courseCandidateSchema = z.object({
   sourceUrl: z.string().url(),
   sourceName: z.string().min(1),
   lastVerifiedAt: z.date(),
+  notes: z.array(z.string()).default([]),
   evidence: z.array(z.string()),
 });
 

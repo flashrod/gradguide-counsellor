@@ -37,6 +37,7 @@ function makeCandidate(overrides: Partial<CourseCandidate> = {}): CourseCandidat
     sourceName: "RIT Graduate Study — Computer Science MS",
     lastVerifiedAt: new Date(),
     evidence: [],
+    notes: [],
     ...overrides,
   };
 }
@@ -58,6 +59,13 @@ describe("validateCourseCandidate", () => {
     const result = validateCourseCandidate(makeCandidate({ minimumGpa: null }));
     expect(result.tier).toBe("PARTIAL");
     expect(result.missing).toContain("GPA");
+  });
+
+  it("rejects non-integer GPA scales as INVALID", () => {
+    const result = validateCourseCandidate(
+      makeCandidate({ minimumGpaScale: 4.33 })
+    );
+    expect(result.tier).toBe("INVALID");
   });
 
   it("rejects out-of-range GPA as INVALID", () => {

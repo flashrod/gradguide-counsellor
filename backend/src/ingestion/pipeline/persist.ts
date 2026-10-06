@@ -35,7 +35,7 @@ export function toNewCourse(
     name: candidate.courseName,
     degreeType: candidate.degreeType ?? "Unknown",
     field: candidate.field ?? "Unknown",
-    durationMonths: candidate.durationMonths ?? 0,
+    durationMonths: candidate.durationMonths,
     tuitionAmount: candidate.tuitionAmount,
     tuitionCurrency: candidate.tuitionCurrency,
     tuitionPeriod: candidate.tuitionPeriod,
@@ -56,9 +56,14 @@ export function toNewCourse(
     careerTags: candidate.careerTags,
     academicBackgrounds: candidate.academicBackgrounds,
     eligibilityNotes:
-      candidate.durationMonths == null
-        ? "Duration not published on the source page; stored as 0 pending verification."
-        : "",
+      [
+        candidate.durationMonths == null
+          ? "Duration not published on the source page."
+          : null,
+        ...(candidate.notes ?? []),
+      ]
+        .filter((note): note is string => note != null)
+        .join(" "),
     sourceUrl: candidate.sourceUrl,
     sourceName: candidate.sourceName,
     lastVerifiedAt: candidate.lastVerifiedAt,
