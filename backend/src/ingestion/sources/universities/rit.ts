@@ -21,5 +21,21 @@ export const ritSource = new CuratedUniversitySource({
       url: "https://www.rit.edu/study/computer-science-ms",
       title: "Computer Science MS",
     },
+    {
+      url: "https://www.rit.edu/study/data-science-ms",
+      title: "Data Science MS",
+    },
+    {
+      url: "https://www.rit.edu/study/artificial-intelligence-ms",
+      title: "Artificial Intelligence MS",
+    },
+    {
+      url: "https://www.rit.edu/study/software-engineering-ms",
+      title: "Software Engineering MS",
+    },
+    {
+      url: "https://www.rit.edu/study/computing-security-ms",
+      title: "Computing Security MS",
+    },
   ],
 });
