@@ -44,7 +44,10 @@ export const sessionsRouter: Router = Router();
 
 // All session routes require authentication; the counsellor identity always
 // comes from the session cookie, never from the request body.
-sessionsRouter.use(requireAuth);
+// NOTE: auth is applied per-route, never via router-level use() — this
+// router is prefix-mounted at /api, so a bare use() would gate every
+// request passing through, including public routes mounted later
+// (students, simulation) that merely share the /api prefix.
 
 function counsellorId(req: Request): string {
   const id = req.counsellor?.id;
@@ -60,7 +63,7 @@ function handleError(error: unknown, res: Response): void {
   throw error;
 }
 
-sessionsRouter.post("/students/:studentId/sessions", async (req: Request, res: Response) => {
+sessionsRouter.post("/students/:studentId/sessions", requireAuth, async (req: Request, res: Response) => {
   const params = studentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
@@ -75,7 +78,7 @@ sessionsRouter.post("/students/:studentId/sessions", async (req: Request, res: R
   }
 });
 
-sessionsRouter.get("/students/:studentId/sessions", async (req: Request, res: Response) => {
+sessionsRouter.get("/students/:studentId/sessions", requireAuth, async (req: Request, res: Response) => {
   const params = studentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
@@ -90,7 +93,7 @@ sessionsRouter.get("/students/:studentId/sessions", async (req: Request, res: Re
   }
 });
 
-sessionsRouter.get("/sessions/:sessionId", async (req: Request, res: Response) => {
+sessionsRouter.get("/sessions/:sessionId", requireAuth, async (req: Request, res: Response) => {
   const params = sessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
@@ -103,7 +106,7 @@ sessionsRouter.get("/sessions/:sessionId", async (req: Request, res: Response) =
   }
 });
 
-sessionsRouter.post("/sessions/:sessionId/end", async (req: Request, res: Response) => {
+sessionsRouter.post("/sessions/:sessionId/end", requireAuth, async (req: Request, res: Response) => {
   const params = sessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
@@ -118,7 +121,7 @@ sessionsRouter.post("/sessions/:sessionId/end", async (req: Request, res: Respon
   }
 });
 
-sessionsRouter.post("/sessions/:sessionId/notes", async (req: Request, res: Response) => {
+sessionsRouter.post("/sessions/:sessionId/notes", requireAuth, async (req: Request, res: Response) => {
   const params = sessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
@@ -142,7 +145,7 @@ sessionsRouter.post("/sessions/:sessionId/notes", async (req: Request, res: Resp
   }
 });
 
-sessionsRouter.put("/notes/:noteId", async (req: Request, res: Response) => {
+sessionsRouter.put("/notes/:noteId", requireAuth, async (req: Request, res: Response) => {
   const params = noteParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
@@ -170,7 +173,7 @@ sessionsRouter.put("/notes/:noteId", async (req: Request, res: Response) => {
   }
 });
 
-sessionsRouter.post("/sessions/:sessionId/simulations", async (req: Request, res: Response) => {
+sessionsRouter.post("/sessions/:sessionId/simulations", requireAuth, async (req: Request, res: Response) => {
   const params = sessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
@@ -200,7 +203,7 @@ sessionsRouter.post("/sessions/:sessionId/simulations", async (req: Request, res
   }
 });
 
-sessionsRouter.post("/sessions/:sessionId/comparisons", async (req: Request, res: Response) => {
+sessionsRouter.post("/sessions/:sessionId/comparisons", requireAuth, async (req: Request, res: Response) => {
   const params = sessionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.issues[0]?.message });
