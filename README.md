@@ -261,6 +261,46 @@ record, bannered "Snapshot from [date]".
 "Historical session artifacts are snapshots and are not recomputed from
 the current course catalogue."
 
+## Current Catalogue (Milestone 12, Wave 1: US + UK)
+
+US: 16 universities, 32 programs. UK: 14 universities, 27 programs.
+Total: 30 universities, 59 programs (plus labelled demo seed data).
+
+US: RIT (5), Northeastern (5), DePaul (4), Drexel (4), NJIT (3), UTSA,
+UNO, FSU, UTD, Buffalo, UIC, UTA, MST, UML, UIUC, GMU (1 each).
+UK: Southampton, Exeter, Sheffield, Loughborough (3 each);
+Liverpool, Leeds, Glasgow, MMU, Greenwich (2 each);
+Portsmouth, Bristol, York, Keele (1 each).
+
+- Discovery: College Scorecard (US institution cross-checks) plus
+  curated official program pages; sitemaps where useful. Aggregators
+  only for discovery — course facts always come from official pages.
+- Commands: `npm run ingest -- --country=US|UK [--limit=N] [--dry-run]`,
+  `npm run ingest -- --all`. Bounded curated lists; per-origin politeness
+  with robots.txt + crawl-delay honored; one failure never aborts a run.
+- Unknown policy: missing stays null (tuition, GPA, IELTS/TOEFL, intake,
+  duration). UK 2:1 classifications are never converted to GPA. Soft
+  minima ("no strict requirement") are suppressed, never hardened.
+  Per-credit tuition without credit basis stays unknown.
+- Dedupe: normalized university + program + country identity plus URL
+  canonicalization; re-runs update instead of duplicating.
+- Known gaps: fee-table structures needing layout parsing (York),
+  multi-track pages (UTD SE skipped), SPA/bot-walled sites (Birmingham,
+  Cardiff, QMUL skipped), TOEFL new 1–6 scale stored only when iBT-range.
+
+"Official university program pages are the preferred source of truth for
+course-level information."
+
+"The catalogue is not intended to represent every university or every
+program. Missing data is explicitly preserved as unknown rather than
+inferred."
+
+### Scaling further
+
+Same pattern scales to 130–195 universities: country adapters (one file
+each), generic extraction, suppression overrides, validated candidates,
+idempotent persistence. No per-university scrapers.
+
 ## Authentication (Milestone 11)
 
 ### Approach

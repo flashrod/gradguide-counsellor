@@ -1,4 +1,6 @@
 import type {
+  ApiCatalogueMeta,
+  ApiCatalogueResponse,
   ApiCourseDetailsResponse,
   ApiNextQuestionResponse,
   ApiRecommendationsResponse,
@@ -145,6 +147,36 @@ export async function getCourseDetails(
     throw new ApiError(502, "Recommendation service returned a malformed response.");
   }
   return data;
+}
+
+export interface CatalogueQuery {
+  search?: string;
+  country?: string;
+  field?: string;
+  degree?: string;
+  intake?: string;
+  currency?: string;
+}
+
+export async function listCatalogue(
+  query: CatalogueQuery = {}
+): Promise<ApiCatalogueResponse> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value != null && value !== "") params.set(key, value);
+  }
+  params.set("limit", "200");
+  const data = await getJson<ApiCatalogueResponse>(
+    `/api/courses?${params.toString()}`
+  );
+  if (!Array.isArray(data.courses)) {
+    throw new ApiError(502, "Recommendation service returned a malformed response.");
+  }
+  return data;
+}
+
+export async function getCatalogueMeta(): Promise<ApiCatalogueMeta> {
+  return getJson<ApiCatalogueMeta>("/api/courses/meta");
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {

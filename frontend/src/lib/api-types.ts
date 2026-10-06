@@ -183,6 +183,37 @@ export interface ApiCourseDetailsResponse {
   course: ApiCourseDetails;
 }
 
+export interface ApiCatalogueEntry {
+  id: string;
+  courseName: string;
+  universityName: string;
+  country: string;
+  degreeType: string;
+  field: string;
+  durationMonths: number | null;
+  tuitionAmount: number | null;
+  tuitionCurrency: string | null;
+  tuitionPeriod: string | null;
+  intakes: string[];
+  minIeltsOverall: number | null;
+  minToeflOverall: number | null;
+  sourceUrl: string;
+  sourceName: string;
+  lastVerifiedAt: string;
+}
+
+export interface ApiCatalogueResponse {
+  total: number;
+  courses: ApiCatalogueEntry[];
+}
+
+export interface ApiCatalogueMeta {
+  countries: string[];
+  fields: string[];
+  degrees: string[];
+  currencies: string[];
+}
+
 export interface ApiSessionTopRecommendation {
   courseName: string;
   universityName: string;
