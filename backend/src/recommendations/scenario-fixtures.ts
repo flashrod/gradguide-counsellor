@@ -101,8 +101,7 @@ function catalogueCourse(
 }
 
 /** Small mixed US/UK catalogue exercising currencies, intakes, and minima. */
-export function mixedCatalogue(): Course[] {
-  return [
+export function mixedCatalogue(): Course[] {  return [
     catalogueCourse("us-ai", "USA", {
       name: "Computer Science MS",
       field: "Artificial Intelligence",

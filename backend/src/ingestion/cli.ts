@@ -5,6 +5,7 @@ import { ingestSource } from "./pipeline/ingestCountry.js";
 import type { CuratedUniversitySource } from "./sources/universityWebsite.js";
 import { buffaloSource } from "./sources/universities/buffalo.js";
 import { depaulSource } from "./sources/universities/depaul.js";
+import { dalhousieSource } from "./sources/universities/dalhousie.js";
 import { drexelSource } from "./sources/universities/drexel.js";
 import { fsuSource } from "./sources/universities/fsu.js";
 import { glasgowSource } from "./sources/universities/glasgow.js";
@@ -12,6 +13,7 @@ import { bristolSource } from "./sources/universities/bristol.js";
 import { exeterSource } from "./sources/universities/exeter.js";
 import { gmuSource } from "./sources/universities/gmu.js";
 import { greenwichSource } from "./sources/universities/greenwich.js";
+import { guelphSource } from "./sources/universities/guelph.js";
 import { keeleSource } from "./sources/universities/keele.js";
 import { liverpoolSource } from "./sources/universities/liverpool.js";
 import { loughboroughSource } from "./sources/universities/loughborough.js";
@@ -22,13 +24,32 @@ import { northeasternSource } from "./sources/universities/northeastern.js";
 import { portsmouthSource } from "./sources/universities/portsmouth.js";
 import { ritSource } from "./sources/universities/rit.js";
 import { sheffieldSource } from "./sources/universities/sheffield.js";
+import { sfuSource } from "./sources/universities/sfu.js";
 import { southamptonSource } from "./sources/universities/southampton.js";
+import { tumSource } from "./sources/universities/tum.js";
+import { tuBerlinSource } from "./sources/universities/tu-berlin.js";
+import { bonnSource } from "./sources/universities/bonn.js";
+import { saarlandSource } from "./sources/universities/saarland.js";
+import { hpiSource } from "./sources/universities/hpi.js";
+import { tuDresdenSource } from "./sources/universities/tu-dresden.js";
+import { kitSource } from "./sources/universities/kit.js";
+import { rwthSource } from "./sources/universities/rwth.js";
 import { leedsSource } from "./sources/universities/leeds.js";
 import { uicSource } from "./sources/universities/uic.js";
 import { umlSource } from "./sources/universities/uml.js";
 import { uiucSource } from "./sources/universities/uiuc.js";
 import { unoSource } from "./sources/universities/uno.js";
+import { windsorSource } from "./sources/universities/windsor.js";
+import { westernSource } from "./sources/universities/western.js";
+import { queensSource } from "./sources/universities/queens.js";
+import { mcgillSource } from "./sources/universities/mcgill.js";
+import { manitobaSource } from "./sources/universities/manitoba.js";
+import { torontoSource } from "./sources/universities/toronto.js";
 import { yorkSource } from "./sources/universities/york.js";
+import { stuttgartSource } from "./sources/universities/stuttgart.js";
+import { ubcSource } from "./sources/universities/ubc.js";
+import { waterlooSource } from "./sources/universities/waterloo.js";
+import { yorkCaSource } from "./sources/universities/york-ca.js";
 import { mstSource } from "./sources/universities/mst.js";
 import { utaSource } from "./sources/universities/uta.js";
 import { utdSource } from "./sources/universities/utd.js";
@@ -50,9 +71,12 @@ export type CountryCode = "US" | "UK" | "CA" | "DE" | "AU" | "IE";
 const REGISTRY: Record<CountryCode, CuratedUniversitySource[]> = {
   US: [ritSource, utsaSource, unoSource, fsuSource, northeasternSource, utdSource, buffaloSource, drexelSource, njitSource, uicSource, depaulSource, utaSource, mstSource, umlSource, uiucSource, gmuSource],
   UK: [southamptonSource, portsmouthSource, liverpoolSource, leedsSource, glasgowSource, bristolSource, sheffieldSource, manchesterSource, exeterSource, mmuSource, yorkSource, greenwichSource, keeleSource, loughboroughSource],
-  // Wave 1 scope is US + UK only. CA/DE/AU/IE adapters land in a later wave.
-  CA: [],
-  DE: [],
+  // Wave 2 (Milestone 12B) adds CA + DE. AU/IE adapters land in a later wave.
+  // NOTE: concordia yields identity only (requirements behind estimators).
+  // Alberta/Calgary were evaluated and SKIPPED — 403/bot-walled fetches.
+  // LMU was evaluated and SKIPPED — English Informatics pages 404.
+  CA: [windsorSource, mcgillSource, manitobaSource, torontoSource, dalhousieSource, guelphSource, sfuSource, westernSource, queensSource, ubcSource, waterlooSource, yorkCaSource],
+  DE: [hpiSource, tuDresdenSource, tumSource, kitSource, rwthSource, tuBerlinSource, bonnSource, saarlandSource, stuttgartSource],
   AU: [],
   IE: [],
 };
@@ -112,6 +136,14 @@ function printReport(
   console.log(`Courses discovered: ${result.coursesDiscovered}`);
   console.log(`Courses accepted: ${result.coursesAccepted}`);
   console.log(`Courses rejected: ${result.coursesRejected}\n`);
+  const rejected = result.outcomes.filter((o) => o.tier === "INVALID");
+  if (rejected.length > 0) {
+    console.log("Rejected:");
+    for (const outcome of rejected) {
+      console.log(`- ${outcome.url}: ${outcome.errors.join("; ")}`);
+    }
+    console.log("");
+  }
   console.log("Warnings:");
   const warningKeys = Object.keys(result.warnings);
   if (warningKeys.length === 0) {
