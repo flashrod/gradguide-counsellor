@@ -30,7 +30,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@rolldown/binding-darwin-arm64": "^1.2.12",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",
@@ -40,5 +39,8 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.0",
     "vitest": "^5.0.3"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-darwin-arm64": "^1.2.12"
   }
 }

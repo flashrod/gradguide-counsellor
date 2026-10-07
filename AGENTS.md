@@ -26,7 +26,7 @@ npm workspaces monorepo: `frontend/` (Next.js, mock data, not wired to backend) 
 
 ## Tests
 
-- `npm run test:backend` → vitest, scoped to `src/**/*.test.ts` (otherwise compiled `dist/` tests double-run). Apple Silicon needs the `@rolldown/binding-darwin-arm64` devDep — don't remove it.
+- `npm run test:backend` → vitest, scoped to `src/**/*.test.ts` (otherwise compiled `dist/` tests double-run). Apple Silicon needs `@rolldown/binding-darwin-arm64` — it lives in `optionalDependencies` so Linux deploys skip it cleanly. Don't remove it.
 - Live-DB tests (`service.test.ts`) share one `pg` Pool: close it in `afterAll`, never per-test. They assert the seeded UUIDs as a subset — the catalogue grows via ingestion, so never assert exact row counts.
 - Ingestion tests must be offline: parse the committed HTML fixture (`extractors/__fixtures__/`), never live-fetch.
 

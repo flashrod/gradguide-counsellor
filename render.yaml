@@ -1,0 +1,41 @@
+# GradGuide Copilot — Render blueprint (backend API + PostgreSQL).
+# Pair with a Vercel project rooted at `frontend/` (see README "Deploy").
+#
+# Deploy order matters:
+#   1. Apply this blueprint (backend gets a public URL).
+#   2. Set BETTER_AUTH_URL / FRONTEND_URL below to the real URLs.
+#   3. Deploy the frontend with NEXT_PUBLIC_API_URL + BACKEND_API_URL
+#      pointing at the backend URL (baked in at build time).
+#   4. Run ingestion from the Render shell to fill the catalogue
+#      (production starts with an empty catalogue — seed never runs here).
+
+services:
+  - type: web
+    name: gradguide-api
+    runtime: node
+    rootDir: .
+    buildCommand: npm install && npm run build:backend
+    startCommand: npm run start --workspace=gradguide-backend
+    healthCheckPath: /api/health
+    preDeployCommand: npm run db:migrate --workspace=gradguide-backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gradguide-db
+          property: connectionString
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: BETTER_AUTH_URL
+        value: https://gradguide-api.onrender.com
+      - key: FRONTEND_URL
+        value: https://gradguide.vercel.app
+      - key: PORT
+        value: 4000
+
+databases:
+  - name: gradguide-db
+    databaseName: gradguide
+    user: gradguide
+    plan: free
