@@ -217,22 +217,119 @@ async function seed(): Promise<void> {
         studentId: STUDENT_DEMO,
         counsellorId: demoUser.id,
         startedAt: new Date("2026-10-05T09:00:00.000Z"),
-        endedAt: null,
+        // Seeded history ships completed so a fresh workspace invites the
+        // counsellor to start their own session during the demo.
+        endedAt: new Date("2026-10-05T09:45:00.000Z"),
+        // Profile copy in the StudentProfile domain shape, as the service
+        // snapshots it at session creation time.
+        studentSnapshot: {
+          id: STUDENT_DEMO,
+          name: "Aarav Sharma (Demo Data)",
+          degree: "B.Tech Computer Science",
+          field: "Computer Science",
+          gpa: { value: 8.4, scale: 10 },
+          ielts: { overall: 7.5, writing: 7.0, reading: 7.5, listening: 8.0, speaking: 7.0 },
+          toeflOverall: null,
+          budgetAmount: 3500000,
+          budgetCurrency: "INR",
+          careerGoal: "AI / Machine Learning",
+          preferredCountries: ["UK", "Canada"],
+          preferredIntake: "September 2027",
+          workExperienceMonths: null,
+        },
       },
     ]);
 
+    // Snapshots mirror the toCourseDetails shape so history renders exactly
+    // like live session records (no "Unknown course" placeholders).
     await tx.insert(sessionRecommendations).values([
       {
         sessionId: SESSION_DEMO,
         courseId: COURSE_AI,
         score: 94,
         action: "shortlisted",
+        rank: 1,
+        eligibility: "eligible",
+        breakdown: { academic: 92, career: 100, budget: 90, eligibility: 100, country: 100, intake: 100 },
+        evidence: {
+          reasons: [{ type: "positive", category: "career", message: "Matches the AI / Machine Learning career goal." }],
+          warnings: [],
+        },
+        courseSnapshot: {
+          courseName: "MSc Demo Artificial Intelligence (Mock Course)",
+          universityName: "Mockbridge University (Demo Data)",
+          universityCountry: "UK",
+          universityCity: "Mockbridge",
+          degreeType: "MSc",
+          field: "Artificial Intelligence",
+          durationMonths: 12,
+          tuitionAmount: 28500,
+          tuitionCurrency: "GBP",
+          tuitionPeriod: "annual",
+          livingCostAmount: 12000,
+          livingCostCurrency: "GBP",
+          livingCostPeriod: "annual",
+          minGpa: { value: 8.0, scale: 10 },
+          minIeltsOverall: 7.0,
+          minIeltsWriting: 6.5,
+          minIeltsReading: 6.5,
+          minIeltsListening: 6.5,
+          minIeltsSpeaking: 6.5,
+          minToeflOverall: null,
+          workExperienceRequired: false,
+          workExperienceMonthsRequired: null,
+          academicBackgrounds: ["Computer Science"],
+          intakes: ["September 2027"],
+          careerTags: ["AI", "Machine Learning"],
+          sourceUrl: "https://example.com/gradguide-demo-dataset",
+          sourceName: "GradGuide demo seed dataset (MOCK — not real data)",
+          lastVerifiedAt: "2026-10-01T00:00:00.000Z",
+        },
+        estimatedCost: { amount: 40500, currency: "GBP" },
       },
       {
         sessionId: SESSION_DEMO,
         courseId: COURSE_DS,
         score: 88,
         action: "discussed",
+        rank: 2,
+        eligibility: "eligible",
+        breakdown: { academic: 85, career: 100, budget: 85, eligibility: 100, country: 100, intake: 80 },
+        evidence: {
+          reasons: [{ type: "positive", category: "career", message: "AI-stream applied computing matches the career goal." }],
+          warnings: [],
+        },
+        courseSnapshot: {
+          courseName: "MACS Demo Applied Computing, AI Stream (Mock Course)",
+          universityName: "Lakeside Institute of Technology (Demo Data)",
+          universityCountry: "Canada",
+          universityCity: "Lakeside",
+          degreeType: "MACS",
+          field: "Applied Computer Science",
+          durationMonths: 16,
+          tuitionAmount: 24300,
+          tuitionCurrency: "CAD",
+          tuitionPeriod: "total",
+          livingCostAmount: null,
+          livingCostCurrency: null,
+          livingCostPeriod: null,
+          minGpa: { value: 7.5, scale: 10 },
+          minIeltsOverall: 7.0,
+          minIeltsWriting: null,
+          minIeltsReading: null,
+          minIeltsListening: null,
+          minIeltsSpeaking: null,
+          minToeflOverall: null,
+          workExperienceRequired: false,
+          workExperienceMonthsRequired: null,
+          academicBackgrounds: ["Computer Science"],
+          intakes: ["September 2027"],
+          careerTags: ["AI"],
+          sourceUrl: "https://example.com/gradguide-demo-dataset",
+          sourceName: "GradGuide demo seed dataset (MOCK — not real data)",
+          lastVerifiedAt: "2026-10-01T00:00:00.000Z",
+        },
+        estimatedCost: { amount: 24300, currency: "CAD" },
       },
     ]);
 
@@ -251,6 +348,13 @@ async function seed(): Promise<void> {
   );
 }
 
+// Seeding wipes all tables and creates a known demo password —
+// refuse to run against production unless explicitly allowed.
+if (process.env["NODE_ENV"] === "production" && process.env["ALLOW_SEED"] !== "true") {
+  // eslint-disable-next-line no-console
+  console.error("Refusing to seed in production without ALLOW_SEED=true.");
+  process.exitCode = 1;
+} else {
 seed()
   .catch((error: unknown) => {
     // eslint-disable-next-line no-console
@@ -260,3 +364,4 @@ seed()
   .finally(async () => {
     await closePool();
   });
+}

@@ -42,3 +42,6 @@ backend/.env
 # typescript
 *.tsbuildinfo
 frontend/next-env.d.ts
+
+# browser audit artifacts
+.playwright-mcp/

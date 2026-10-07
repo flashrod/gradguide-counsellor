@@ -66,7 +66,7 @@ export function ResumeReview({ preselectedStudentId }: ResumeReviewProps) {
   const [newName, setNewName] = useState("");
   const [careerGoal, setCareerGoal] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
-  const [budgetCurrency, setBudgetCurrency] = useState("USD");
+  const [budgetCurrency, setBudgetCurrency] = useState("");
   const [countries, setCountries] = useState("");
   const [intake, setIntake] = useState("");
   const [confirmedStudentId, setConfirmedStudentId] = useState<string | null>(null);
@@ -103,7 +103,7 @@ export function ResumeReview({ preselectedStudentId }: ResumeReviewProps) {
     setNewName(detail.extraction?.personal.name ?? "");
     setCareerGoal("");
     setBudgetAmount("");
-    setBudgetCurrency("USD");
+    setBudgetCurrency("");
     setCountries("");
     setIntake("");
   }
@@ -233,9 +233,12 @@ export function ResumeReview({ preselectedStudentId }: ResumeReviewProps) {
     }
     if (budgetAmount.trim() !== "") {
       const amount = num(budgetAmount);
+      const currency = budgetCurrency.trim().toUpperCase();
       if (amount != null) {
         profile.budgetAmount = amount;
-        profile.budgetCurrency = budgetCurrency;
+        // Currency is optional: without it the engine treats the budget
+        // as unknown rather than guessing a currency.
+        if (/^[A-Z]{3}$/.test(currency)) profile.budgetCurrency = currency;
         fieldSources["budgetAmount"] = "manual";
       }
     }
@@ -419,7 +422,7 @@ export function ResumeReview({ preselectedStudentId }: ResumeReviewProps) {
                 <input aria-label="Career goal" className={inputClass} value={careerGoal} onChange={(e) => setCareerGoal(e.target.value)} placeholder="Career goal (e.g. AI/ML)" />
                 <input aria-label="Preferred intake" className={inputClass} value={intake} onChange={(e) => setIntake(e.target.value)} placeholder="Preferred intake" />
                 <input aria-label="Budget amount" className={inputClass} value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} placeholder="Budget amount" inputMode="decimal" />
-                <input aria-label="Budget currency" className={inputClass} value={budgetCurrency} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase().slice(0, 3))} placeholder="Currency (USD)" />
+                <input aria-label="Budget currency" className={inputClass} value={budgetCurrency} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase().slice(0, 3))} placeholder="Currency code" />
                 <input aria-label="Preferred countries" className={`${inputClass} sm:col-span-2`} value={countries} onChange={(e) => setCountries(e.target.value)} placeholder="Preferred countries, comma separated" />
               </div>
             </div>

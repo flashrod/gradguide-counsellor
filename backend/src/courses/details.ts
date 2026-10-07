@@ -140,8 +140,10 @@ export async function catalogueFacets(): Promise<{
   fields: string[];
   degrees: string[];
   currencies: string[];
+  /** Total catalogue rows, matching listCatalogue (includes labelled demo rows). */
+  total: number;
 }> {
-  const [countries, fields, degrees, currencies] = await Promise.all([
+  const [countries, fields, degrees, currencies, total] = await Promise.all([
     db
       .selectDistinct({ value: universities.country })
       .from(universities)
@@ -155,6 +157,7 @@ export async function catalogueFacets(): Promise<{
       .selectDistinct({ value: courses.tuitionCurrency })
       .from(courses)
       .orderBy(courses.tuitionCurrency),
+    db.$count(courses),
   ]);
   return {
     countries: countries.map((r) => r.value),
@@ -163,6 +166,7 @@ export async function catalogueFacets(): Promise<{
     currencies: currencies
       .map((r) => r.value)
       .filter((v): v is string => v != null),
+    total,
   };
 }
 

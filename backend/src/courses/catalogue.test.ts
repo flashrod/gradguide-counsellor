@@ -46,4 +46,11 @@ describe.skipIf(!process.env["DATABASE_URL"])("catalogue listing (live database)
     expect(facets.degrees.length).toBeGreaterThan(0);
     expect(facets.fields.length).toBeGreaterThan(0);
   });
+
+  it("reports a total consistent with the listing", async () => {
+    const facets = await catalogueFacets();
+    const listed = await listCatalogue({});
+    expect(facets.total).toBe(listed.total);
+    expect(facets.total).toBeGreaterThan(0);
+  });
 });

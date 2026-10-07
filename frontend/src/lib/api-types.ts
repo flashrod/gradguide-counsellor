@@ -212,6 +212,7 @@ export interface ApiCatalogueMeta {
   fields: string[];
   degrees: string[];
   currencies: string[];
+  total: number;
 }
 
 export interface ApiSessionTopRecommendation {

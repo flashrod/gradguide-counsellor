@@ -1,9 +1,20 @@
-# GradGuide Copilot — Milestones 1–2
+# GradGuide Copilot
 
-Hiring assignment: Course Recommendation Assistant for study-abroad counsellors.
-- Milestone 1: UI shell + mock data only.
-- Milestone 2: PostgreSQL + Drizzle foundation (this milestone).
-- Not yet: auth, Gemini, resume parsing, recommendation engine, tRPC, Redis.
+GradGuide Copilot is a counsellor-facing course recommendation assistant designed for live counselling sessions. It produces consistent, explainable recommendations from verified course data while helping counsellors identify missing information and explore how student preferences affect recommendations.
+
+**Who it's for:** study-abroad counsellors conducting live sessions — not students browsing alone. Every screen optimizes for "the counsellor is on a call right now": fast ranking, visible evidence, one high-impact question at a time.
+
+**Why generic recommenders are insufficient:** generic course search can't tell a counsellor *why* a programme fits, what to ask next when a profile is incomplete, or how a "what if my budget were lower?" scenario changes the ranking — and LLM-ranked lists are non-deterministic, so two counsellors get different answers for the same student. GradGuide fixes all three with a deterministic engine plus three differentiators:
+
+1. **Explainable Match** — every recommendation carries dimension scores (academic, career, budget, eligibility, country, intake) with reasons/warnings and source provenance.
+2. **Next Best Question** — the single missing answer with the highest measured impact across the top 10 recommendations (deterministic impact score, never fabricated).
+3. **What-if Recommendation Explorer** — counsellors preview GPA/budget/country/intake changes; the stored profile is never mutated (verified read-only).
+
+**Core workflow:** counsellor signs in → opens workspace → imports the student resume (or uses an existing profile) → reviews/confirm extracted fields with provenance → gets ranked recommendations → asks the next-best question → explores what-ifs → compares programmes → saves an immutable session snapshot.
+
+**Product rules that never bend:** the engine is pure deterministic TypeScript (no LLM in ranking); unknown information is *unknown*, never ineligible and never invented; manual counsellor input always outranks resume extraction; session history is frozen at creation time.
+
+Hiring-assignment build log below (Milestones 1–13), newest last where applicable.
 
 ## Structure
 
@@ -539,28 +550,63 @@ Nothing reaches a student profile without explicit confirmation.
 # install (from repo root)
 npm install
 
-# frontend → http://localhost:3000 (redirects to /workspace)
-npm run dev:frontend
+# database (needs PostgreSQL 16; or: npm run db:up for Docker)
+cp backend/.env.example backend/.env   # then set BETTER_AUTH_SECRET (openssl rand -base64 32)
+npm run db:migrate                      # apply backend/drizzle/*.sql
+npm run db:seed                         # DEV ONLY: resets tables, inserts labelled demo data + demo counsellor
 
 # backend → http://localhost:4000/api/health
 npm run dev:backend
+
+# frontend → http://localhost:3000 (redirects to /workspace)
+npm run dev:frontend
 ```
 
-Build / lint:
+Sign in at `/login` with `demo@gradguide.local` / password from
+`DEMO_COUNSELLOR_*` in your local `backend/.env`. The seeded demo
+student, courses, and one completed session make the workspace,
+catalogue, and history usable immediately.
+
+Build / lint / tests:
 
 ```bash
 npm run build:frontend
 npm run build:backend
 npm run lint
+npm run test:backend   # 312 tests (live-DB tests need DATABASE_URL)
+npm run test --workspace=gradguide-frontend   # 49 tests
 ```
+
+3-minute demo script: login → workspace (ranked recommendations +
+Explainable Match) → **Import resume** → upload a text PDF → review
+provenance badges → **Confirm profile** → View recommendations →
+Next Best Question → What-if → Compare → Start session → End session →
+Sessions history shows the immutable snapshot.
+
+## Environment variables
+
+Backend (`backend/.env`, see `.example`): `PORT`, `DATABASE_URL`,
+`BETTER_AUTH_SECRET` (≥32 chars), `BETTER_AUTH_URL` (public backend
+origin), `FRONTEND_URL` (public frontend origin for CORS + cookies),
+`DEMO_COUNSELLOR_*` (dev seed only), `COLLEGESCOREDATA_API_KEY`
+(optional, ingestion enrichment only). Never commit real values —
+only `.example` files are tracked. Key production notes: `BETTER_AUTH_URL`
+and `FRONTEND_URL` must be the deployed origins (cookies are
+`Secure` in production); run `db:migrate` on deploy; `db:seed`
+resets tables and is dev-only.
+
+Frontend: `BACKEND_API_URL` (server fetches), `NEXT_PUBLIC_API_URL`
+(browser fetches, same backend origin), optional `WORKSPACE_STUDENT_ID`.
 
 ## Decisions
 
 - npm workspaces at the root; each side keeps its own `package.json` and `tsconfig`.
-- Backend is intentionally minimal (Express + health endpoint) so Milestone 2+
-  (tRPC, PostgreSQL + Drizzle, Gemini) has a clean place to land.
-- Frontend and backend are not wired together yet; `frontend/.env.example`
-  reserves `NEXT_PUBLIC_API_URL` for later milestones.
+- Express + PostgreSQL + Drizzle (`pg` driver); schema in
+  `backend/src/db/schema.ts`, versioned SQL in `backend/drizzle/`.
+- better-auth (email + password) owns identity; the session cookie is
+  the only counsellor identity source server-side.
+- No Redis, queues, or object storage: ranking is sub-millisecond and
+  resumes are processed in-memory (~250 ms), so there is nothing to cache.
 - TypeScript strict mode, no `any`, business logic kept out of components.
 - `drizzle-orm` is pinned to `0.44.5` (and hoisted to the root `devDependencies`)
   because `drizzle-kit@0.31` requires ORM `compatibilityVersion 10` and resolves

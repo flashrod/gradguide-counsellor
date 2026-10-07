@@ -63,7 +63,7 @@ export default function SettingsPage() {
               Save changes
             </Button>
             <p className="text-xs text-slate-400">
-              Editable settings arrive with authentication in a later milestone.
+              Shared workspace defaults — per-counsellor preferences are out of scope for this build.
             </p>
           </CardContent>
         </Card>

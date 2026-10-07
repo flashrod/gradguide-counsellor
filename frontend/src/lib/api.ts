@@ -370,8 +370,13 @@ export async function confirmResume(
   };
 }
 
-export async function listStudents(): Promise<{ students: ApiStudentSummary[] }> {
-  const response = await authedFetch("/api/students", { method: "GET" });
+export async function listStudents(
+  options?: ApiRequestOptions
+): Promise<{ students: ApiStudentSummary[] }> {
+  const response = await authedFetch("/api/students", {
+    method: "GET",
+    ...(options?.cookie != null ? { headers: { cookie: options.cookie } } : {}),
+  });
   if (response.status === 401) throw new ApiError(401, "Authentication required.");
   if (!response.ok) errorMessage(response.status, "Recommendation service returned an error.");
   return (await response.json()) as { students: ApiStudentSummary[] };
