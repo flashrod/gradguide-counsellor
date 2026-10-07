@@ -11,10 +11,12 @@ import {
   ApiError,
   getNextQuestion,
   getRecommendations,
+  getSessionDetail,
   getStudent,
   listSessions,
   listStudents,
 } from "@/lib/api";
+import { parseAnsweredNotes } from "@/lib/qa-notes";
 
 /**
  * Live counsel mode — the meeting side panel. A compact single column
@@ -114,9 +116,15 @@ export default async function LivePage({
     if (error instanceof ApiError && error.status === 404) redirect("/students");
     throw error;
   });
-  const activeSession =
-    sessions.find((session) => session.status === "ACTIVE") ?? null;
-  const topPicks = data.recommendations.slice(0, 3);
+    const activeSession =
+      sessions.find((session) => session.status === "ACTIVE") ?? null;
+    const answered =
+      activeSession != null
+        ? parseAnsweredNotes(
+            (await getSessionDetail(activeSession.id, { cookie })).notes
+          )
+        : [];
+    const topPicks = data.recommendations.slice(0, 3);
 
   return (
     <Shell>
@@ -182,6 +190,7 @@ export default async function LivePage({
             data={nextQuestion}
             studentId={studentId}
             activeSessionId={activeSession?.id ?? null}
+            answered={answered}
           />
         </section>
 

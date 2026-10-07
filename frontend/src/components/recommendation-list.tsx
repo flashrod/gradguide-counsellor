@@ -11,6 +11,9 @@ import type { ApiRecommendation } from "@/lib/api-types";
 
 export const MAX_COMPARE_SELECTION = 3;
 
+/** Page size: the question card should be reachable without scrolling far. */
+export const RECOMMENDATION_PAGE_SIZE = 6;
+
 interface RecommendationListProps {
   recommendations: ApiRecommendation[];
   studentId: string;
@@ -19,6 +22,7 @@ interface RecommendationListProps {
 export function RecommendationList({ recommendations, studentId }: RecommendationListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   function toggleSelect(courseId: string): void {
     if (selectedIds.includes(courseId)) {
@@ -39,10 +43,15 @@ export function RecommendationList({ recommendations, studentId }: Recommendatio
     setNotice(null);
   }
 
+  const visible = expanded
+    ? recommendations
+    : recommendations.slice(0, RECOMMENDATION_PAGE_SIZE);
+  const hiddenCount = recommendations.length - visible.length;
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {recommendations.map((recommendation) => (
+        {visible.map((recommendation) => (
           <RecommendationCard
             key={recommendation.courseId}
             recommendation={recommendation}
@@ -52,6 +61,24 @@ export function RecommendationList({ recommendations, studentId }: Recommendatio
         ))}
       </div>
 
+      {hiddenCount > 0 && !expanded && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setExpanded(true)}
+        >
+          Show {hiddenCount} more recommendation{hiddenCount === 1 ? "" : "s"}
+        </Button>
+      )}
+      {expanded && recommendations.length > RECOMMENDATION_PAGE_SIZE && (
+        <Button
+          variant="ghost"
+          className="w-full"
+          onClick={() => setExpanded(false)}
+        >
+          Show less
+        </Button>
+      )}
       {notice != null && (
         <p role="alert" className="text-[13px] text-amber-700">
           {notice}

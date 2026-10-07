@@ -74,6 +74,19 @@ describe("NextQuestionCard", () => {
     expect(screen.getByText("Add to session notes")).toBeDefined();
   });
 
+  it("lists answered questions below the card", () => {
+    render(
+      <NextQuestionCard
+        data={QUESTION}
+        studentId="student-1"
+        activeSessionId="session-1"
+        answered={[{ question: "What role?", answer: "ML engineer" }]}
+      />
+    );
+    expect(screen.getByText(/Asked & answered/)).toBeDefined();
+    expect(screen.getByText(/ML engineer/)).toBeDefined();
+  });
+
   it("saves a career answer with PATCH and confirms", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

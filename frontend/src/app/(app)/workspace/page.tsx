@@ -6,9 +6,11 @@ import {
   DEMO_STUDENT_ID,
   getNextQuestion,
   getRecommendations,
+  getSessionDetail,
   getStudent,
   listSessions,
 } from "@/lib/api";
+import { parseAnsweredNotes } from "@/lib/qa-notes";
 import { EmptyRecommendations } from "@/components/empty-recommendations";
 import { NextQuestionCard } from "@/components/next-question-card";
 import { PageHeader } from "@/components/page-header";
@@ -55,6 +57,14 @@ export default async function WorkspacePage({
   });
   const activeSession =
     sessions.find((session) => session.status === "ACTIVE") ?? null;
+  // Answers saved during the live session persist as structured notes —
+  // surface them under the question card.
+  const answered =
+    activeSession != null
+      ? parseAnsweredNotes(
+          (await getSessionDetail(activeSession.id, { cookie })).notes
+        )
+      : [];
 
   return (
     <div className="space-y-6">
@@ -123,6 +133,7 @@ export default async function WorkspacePage({
           data={nextQuestion}
           studentId={student.id}
           activeSessionId={activeSession?.id ?? null}
+          answered={answered}
         />
       </section>
 

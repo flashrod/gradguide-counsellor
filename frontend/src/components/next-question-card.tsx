@@ -12,11 +12,13 @@ import type {
   ApiNextQuestion,
   ApiNextQuestionResponse,
 } from "@/lib/api-types";
+import { formatQaNote, type AnsweredPair } from "@/lib/qa-notes";
 
 interface NextQuestionCardProps {
   data: ApiNextQuestionResponse;
   studentId: string;
   activeSessionId: string | null;
+  answered?: AnsweredPair[];
 }
 
 const inputClass =
@@ -28,7 +30,7 @@ function FieldAnswer({
   busy,
 }: {
   field: string;
-  onSave: (patch: Record<string, unknown>) => void;
+  onSave: (patch: Record<string, unknown>, display: string) => void;
   busy: boolean;
 }) {
   const [text, setText] = useState("");
@@ -36,38 +38,54 @@ function FieldAnswer({
   const [num2, setNum2] = useState("");
 
   function save(): void {
-    if (field === "career") return onSave({ careerGoal: text.trim() });
-    if (field === "intake") return onSave({ preferredIntake: text.trim() });
+    if (field === "career" || field === "intake") {
+      const value = text.trim();
+      return onSave(
+        field === "career" ? { careerGoal: value } : { preferredIntake: value },
+        value
+      );
+    }
     if (field === "country") {
-      return onSave({
-        preferredCountries: text
-          .split(",")
-          .map((c) => c.trim())
-          .filter((c) => c !== ""),
-      });
+      const countries = text
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c) => c !== "");
+      return onSave({ preferredCountries: countries }, countries.join(", "));
     }
     if (field === "academic") {
-      return onSave({
-        gpaValue: Number(num1),
-        gpaScale: Number(num2),
-      });
+      return onSave(
+        { gpaValue: Number(num1), gpaScale: Number(num2) },
+        `${num1.trim()}/${num2.trim()}`
+      );
     }
     if (field === "english") {
-      return onSave({
-        ...(num1 === "" ? {} : { ieltsOverall: Number(num1) }),
-        ...(num2 === "" ? {} : { toeflOverall: Number(num2) }),
-      });
+      const parts: string[] = [];
+      if (num1.trim() !== "") parts.push(`IELTS ${num1.trim()}`);
+      if (num2.trim() !== "") parts.push(`TOEFL ${num2.trim()}`);
+      return onSave(
+        {
+          ...(num1 === "" ? {} : { ieltsOverall: Number(num1) }),
+          ...(num2 === "" ? {} : { toeflOverall: Number(num2) }),
+        },
+        parts.join(" · ")
+      );
     }
     if (field === "budget") {
-      return onSave({
-        budgetAmount: Number(num1),
-        budgetCurrency: num2.trim().toUpperCase(),
-      });
+      return onSave(
+        {
+          budgetAmount: Number(num1),
+          budgetCurrency: num2.trim().toUpperCase(),
+        },
+        `${num1.trim()} ${num2.trim().toUpperCase()}`
+      );
     }
     if (field === "work-experience") {
-      return onSave({ workExperienceMonths: Number(num1) });
+      return onSave(
+        { workExperienceMonths: Number(num1) },
+        `${num1.trim()} months`
+      );
     }
-    return onSave({ careerGoal: text.trim() });
+    return onSave({ careerGoal: text.trim() }, text.trim());
   }
 
   if (field === "academic") {
@@ -159,8 +177,8 @@ function QuestionBody({
     setBusy(false);
   }
 
-  async function saveAnswer(patch: Record<string, unknown>): Promise<void> {
-    if (Object.values(patch).every((v) => v === "" || Number.isNaN(v))) {
+  async function saveAnswer(patch: Record<string, unknown>, display: string): Promise<void> {
+    if (display === "") {
       fail("Type an answer first.");
       return;
     }
@@ -180,7 +198,23 @@ function QuestionBody({
         studentId,
         patch as Parameters<typeof updateStudent>[1]
       );
-      setMessage("Saved — recommendations updated.");
+      // Answers belong to the conversation: attach Q&A to the live
+      // session so the exchange survives in history.
+      if (activeSessionId != null) {
+        try {
+          await addSessionNote(activeSessionId, formatQaNote(data.question, display));
+        } catch {
+          setMessage("Saved, but couldn't attach to the session notes.");
+          setIsError(false);
+          router.refresh();
+          return;
+        }
+      }
+      setMessage(
+        activeSessionId != null
+          ? "Saved — recommendations updated."
+          : "Saved — recommendations updated. Start a session to keep answers in history."
+      );
       router.refresh();
     } catch (err) {
       fail(err instanceof ApiError ? err.message : "Could not save the answer.");
@@ -223,7 +257,7 @@ function QuestionBody({
         <span className="font-medium text-slate-700">Why: </span>
         {data.reason}
       </p>
-      <FieldAnswer field={data.field} onSave={(patch) => void saveAnswer(patch)} busy={busy} />
+      <FieldAnswer key={data.field} field={data.field} onSave={(patch, display) => void saveAnswer(patch, display)} busy={busy} />
       {message != null && (
         <p role={isError ? "alert" : "status"} className={`mt-2 text-[13px] ${isError ? "text-red-700" : "text-emerald-700"}`}>
           {message}
@@ -243,45 +277,77 @@ function QuestionBody({
   );
 }
 
-export function NextQuestionCard({ data, studentId, activeSessionId }: NextQuestionCardProps) {
+export function NextQuestionCard({ data, studentId, activeSessionId, answered = [] }: NextQuestionCardProps) {
   if ("status" in data) {
     return (
-      <Card className="border-emerald-200/70 bg-emerald-50/50">
-        <CardContent className="flex items-start gap-4 pt-6">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800">
-            <Crosshair className="h-4 w-4" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-800">
-              Next best question
-            </p>
-            <p className="mt-1.5 text-[15px] font-semibold text-slate-900">
-              Profile is sufficiently complete
-            </p>
-            <p className="mt-1 text-[13px] leading-relaxed text-slate-600">
-              {data.message}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <>
+        <Card className="border-emerald-200/70 bg-emerald-50/50">
+          <CardContent className="flex items-start gap-4 pt-6">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800">
+              <Crosshair className="h-4 w-4" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-widest text-emerald-800">
+                Next best question
+              </p>
+              <p className="mt-1.5 text-[15px] font-semibold text-slate-900">
+                Profile is sufficiently complete
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-600">
+                {data.message}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <AnsweredHistory answered={answered} />
+      </>
     );
   }
 
   return (
-    <Card className="border-amber-200/70 bg-amber-50/50">
-      <CardContent className="flex items-start gap-4 pt-6">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
-          <Crosshair className="h-4 w-4" aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-semibold uppercase tracking-widest text-amber-800">
-              Next best question
-            </p>
-            <Badge variant="warning">{`${data.priority} IMPACT`}</Badge>
+    <>
+      <Card className="border-amber-200/70 bg-amber-50/50">
+        <CardContent className="flex items-start gap-4 pt-6">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-800">
+            <Crosshair className="h-4 w-4" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-800">
+                Next best question
+              </p>
+              <Badge variant="warning">{`${data.priority} IMPACT`}</Badge>
+            </div>
+            <QuestionBody data={data} studentId={studentId} activeSessionId={activeSessionId} />
           </div>
-          <QuestionBody data={data} studentId={studentId} activeSessionId={activeSessionId} />
-        </div>
+        </CardContent>
+      </Card>
+      <AnsweredHistory answered={answered} />
+    </>
+  );
+}
+
+function AnsweredHistory({ answered }: { answered: AnsweredPair[] }) {
+  if (answered.length === 0) return null;
+  return (
+    <Card className="mt-4">
+      <CardContent className="pt-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+          Asked &amp; answered · {answered.length}
+        </p>
+        <ul className="mt-3 space-y-3">
+          {answered.map((pair, index) => (
+            <li
+              key={`${pair.question}-${index}`}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5"
+            >
+              <p className="text-[13px] font-medium text-slate-900">
+                Q: {pair.question}
+              </p>
+              <p className="mt-1 text-[13px] text-slate-600">A: {pair.answer}</p>
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );
