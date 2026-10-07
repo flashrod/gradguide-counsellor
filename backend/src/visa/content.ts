@@ -12,9 +12,15 @@ export interface VisaStep {
   detail: string;
 }
 
+export interface VisaLink {
+  label: string;
+  url: string;
+}
+
 export interface VisaCountry {
   country: string;
   note: string;
+  links: VisaLink[];
   steps: VisaStep[];
 }
 
@@ -22,6 +28,9 @@ export const VISA_GUIDE: VisaCountry[] = [
   {
     country: "UK",
     note: "Student route: CAS from a licensed sponsor, then online application.",
+    links: [
+      { label: "GOV.UK — Student visa", url: "https://www.gov.uk/student-visa" },
+    ],
     steps: [
       {
         key: "cas",
@@ -53,6 +62,12 @@ export const VISA_GUIDE: VisaCountry[] = [
   {
     country: "USA",
     note: "F-1 route: I-20 from the university, SEVIS fee, then the consulate interview.",
+    links: [
+      {
+        label: "U.S. Dept of State — Student visas",
+        url: "https://travel.state.gov/content/travel/en/us-visas/study/student-visa.html",
+      },
+    ],
     steps: [
       {
         key: "i20",
@@ -84,6 +99,12 @@ export const VISA_GUIDE: VisaCountry[] = [
   {
     country: "Canada",
     note: "Study permit route: LOA, provincial attestation, then IRCC application.",
+    links: [
+      {
+        label: "IRCC — Study in Canada",
+        url: "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada.html",
+      },
+    ],
     steps: [
       {
         key: "loa",
@@ -115,6 +136,12 @@ export const VISA_GUIDE: VisaCountry[] = [
   {
     country: "Germany",
     note: "Student route: admission, blocked account, then the embassy.",
+    links: [
+      {
+        label: "DAAD — Study in Germany",
+        url: "https://www.study-in-germany.de/en/",
+      },
+    ],
     steps: [
       {
         key: "admission",

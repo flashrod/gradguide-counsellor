@@ -59,7 +59,7 @@ function LoginForm() {
           void submit();
         }}
       >
-        <label className="block text-xs font-medium text-slate-200">
+        <label className="block text-xs font-medium text-white">
           Email
           <input
             aria-label="Email"
@@ -71,7 +71,7 @@ function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
-        <label className="block text-xs font-medium text-slate-200">
+        <label className="block text-xs font-medium text-white">
           Password
           <input
             aria-label="Password"

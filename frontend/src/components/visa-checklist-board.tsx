@@ -50,6 +50,24 @@ export function VisaChecklistBoard({
               </h2>
               <p className="text-xs text-slate-500">{group.note}</p>
             </div>
+            {group.links.length > 0 && (
+              <p className="mt-1.5 text-xs text-slate-500">
+                Official source:{" "}
+                {group.links.map((link, i) => (
+                  <span key={link.url}>
+                    {i > 0 && " · "}
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-slate-700 underline underline-offset-4 hover:text-slate-900"
+                    >
+                      {link.label}
+                    </a>
+                  </span>
+                ))}
+              </p>
+            )}
             <div
               className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100"
               role="progressbar"

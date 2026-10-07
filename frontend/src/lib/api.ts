@@ -542,6 +542,7 @@ export interface ApiVisaStep {
 export interface ApiVisaCountry {
   country: string;
   note: string;
+  links: { label: string; url: string }[];
   doneCount: number;
   totalCount: number;
   steps: ApiVisaStep[];

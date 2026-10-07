@@ -21,6 +21,7 @@ export interface VisaStepState {
 export interface VisaCountryState {
   country: string;
   note: string;
+  links: { label: string; url: string }[];
   doneCount: number;
   totalCount: number;
   steps: VisaStepState[];
@@ -70,6 +71,7 @@ export async function getVisaChecklist(
     return {
       country,
       note: guide.note,
+      links: guide.links,
       doneCount: steps.filter((s) => s.done).length,
       totalCount: steps.length,
       steps,

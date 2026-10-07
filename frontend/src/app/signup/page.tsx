@@ -59,7 +59,7 @@ export default function SignupPage() {
           void submit();
         }}
       >
-        <label className="block text-xs font-medium text-slate-200">
+        <label className="block text-xs font-medium text-white">
           Name
           <input
             aria-label="Name"
@@ -71,7 +71,7 @@ export default function SignupPage() {
             onChange={(e) => setName(e.target.value)}
           />
         </label>
-        <label className="block text-xs font-medium text-slate-200">
+        <label className="block text-xs font-medium text-white">
           Email
           <input
             aria-label="Email"
@@ -83,7 +83,7 @@ export default function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
-        <label className="block text-xs font-medium text-slate-200">
+        <label className="block text-xs font-medium text-white">
           Password
           <input
             aria-label="Password"
