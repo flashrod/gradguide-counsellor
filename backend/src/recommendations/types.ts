@@ -69,6 +69,12 @@ export interface StudentProfile {
   preferredIntake: string | null;
   /** Total months of work experience. Null = unknown. */
   workExperienceMonths: number | null;
+  /**
+   * Counsellor-entered MONTHLY living cost (rent etc.). Display-only:
+   * the engine never scores it. Null = unknown.
+   */
+  livingCostAmount: number | null;
+  livingCostCurrency: string | null;
 }
 
 export interface Course {

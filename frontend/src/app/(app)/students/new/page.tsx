@@ -45,6 +45,8 @@ export default function NewStudentPage() {
   const [intake, setIntake] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
   const [budgetCurrency, setBudgetCurrency] = useState("");
+  const [livingAmount, setLivingAmount] = useState("");
+  const [livingCurrency, setLivingCurrency] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +68,7 @@ export default function NewStudentPage() {
       const scale = num(gpaScale);
       const ieltsOverall = num(ielts);
       const budget = num(budgetAmount);
+      const rent = num(livingAmount);
       const { student } = await createStudent({
         name: name.trim(),
         ...(degree.trim() !== "" ? { degree: degree.trim() } : {}),
@@ -86,6 +89,10 @@ export default function NewStudentPage() {
         ...(budget !== undefined ? { budgetAmount: budget } : {}),
         ...(budgetCurrency.trim() !== ""
           ? { budgetCurrency: budgetCurrency.trim().toUpperCase() }
+          : {}),
+        ...(rent !== undefined ? { livingCostAmount: rent } : {}),
+        ...(livingCurrency.trim() !== ""
+          ? { livingCostCurrency: livingCurrency.trim().toUpperCase() }
           : {}),
       });
       router.push(`/workspace?student=${student.id}`);
@@ -138,6 +145,14 @@ export default function NewStudentPage() {
               </Field>
               <Field label="Currency">
                 <input aria-label="Budget currency" type="text" maxLength={3} placeholder="INR" className={`${inputClass} uppercase`} value={budgetCurrency} onChange={(e) => setBudgetCurrency(e.target.value)} disabled={busy} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Monthly rent / living">
+                <input aria-label="Monthly living amount" type="number" step="any" min="0" placeholder="1200" className={inputClass} value={livingAmount} onChange={(e) => setLivingAmount(e.target.value)} disabled={busy} />
+              </Field>
+              <Field label="Currency">
+                <input aria-label="Living currency" type="text" maxLength={3} placeholder="GBP" className={`${inputClass} uppercase`} value={livingCurrency} onChange={(e) => setLivingCurrency(e.target.value)} disabled={busy} />
               </Field>
             </div>
           </div>

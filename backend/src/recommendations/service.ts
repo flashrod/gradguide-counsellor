@@ -55,6 +55,8 @@ export function toDomainStudent(row: DbStudent): StudentProfile {
     preferredCountries: row.preferredCountries,
     preferredIntake: row.preferredIntake,
     workExperienceMonths: row.workExperienceMonths,
+    livingCostAmount: row.livingCostAmount,
+    livingCostCurrency: row.livingCostCurrency,
   };
 }
 

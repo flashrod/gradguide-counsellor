@@ -24,6 +24,8 @@ export function makeStudent(
     preferredCountries: ["UK", "Canada"],
     preferredIntake: "September 2027",
     workExperienceMonths: null,
+    livingCostAmount: null,
+    livingCostCurrency: null,
     ...overrides,
   };
 }

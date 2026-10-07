@@ -252,6 +252,8 @@ export interface UpdateStudentPatch {
   preferredCountries?: string[];
   preferredIntake?: string | null;
   workExperienceMonths?: number | null;
+  livingCostAmount?: number | null;
+  livingCostCurrency?: string | null;
 }
 
 export async function updateStudent(

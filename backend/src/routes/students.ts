@@ -26,6 +26,8 @@ const createStudentSchema = z.object({
   preferredCountries: z.array(z.string().min(1).max(100)).max(20).default([]),
   preferredIntake: z.string().max(100).nullable().default(null),
   workExperienceMonths: z.number().int().min(0).max(600).nullable().default(null),
+  livingCostAmount: z.number().finite().min(0).nullable().default(null),
+  livingCostCurrency: z.string().regex(/^[A-Z]{3}$/).nullable().default(null),
 });
 
 export const studentsRouter: Router = Router();
@@ -63,6 +65,8 @@ studentsRouter.post("/students", requireAuth, async (req: Request, res: Response
       preferredCountries: parsed.data.preferredCountries,
       preferredIntake: parsed.data.preferredIntake,
       workExperienceMonths: parsed.data.workExperienceMonths,
+      livingCostAmount: parsed.data.livingCostAmount,
+      livingCostCurrency: parsed.data.livingCostCurrency,
     });
     res.status(201).json({ student });
   } catch {
@@ -109,6 +113,8 @@ const updateStudentSchema = z.object({
   preferredCountries: z.array(z.string().min(1).max(100)).max(20).optional(),
   preferredIntake: z.string().max(100).nullable().optional(),
   workExperienceMonths: z.number().int().min(0).max(600).nullable().optional(),
+  livingCostAmount: z.number().finite().min(0).nullable().optional(),
+  livingCostCurrency: z.string().regex(/^[A-Z]{3}$/).nullable().optional(),
 });
 
 studentsRouter.patch("/students/:studentId", requireAuth, async (req: Request, res: Response) => {

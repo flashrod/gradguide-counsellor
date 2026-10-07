@@ -139,9 +139,12 @@ export default async function WorkspacePage({
       </section>
 
       <BudgetPlanner
+        studentId={student.id}
         recommendations={data.recommendations}
         budgetAmount={student.budgetAmount}
         budgetCurrency={student.budgetCurrency}
+        livingAmount={student.livingCostAmount}
+        livingCurrency={student.livingCostCurrency}
       />
 
       <WhatIfPanel        studentId={student.id}

@@ -1,23 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ApiError,
   getCourseDetails,
+  updateStudent,
 } from "@/lib/api";
 import type {
   ApiCourseDetails,
   ApiRecommendation,
 } from "@/lib/api-types";
-import { formatMoney, splitCosts } from "@/lib/cost-math";
+import { formatMoney, normalizeTotal, splitCosts } from "@/lib/cost-math";
 
 interface BudgetPlannerProps {
+  studentId: string;
   recommendations: ApiRecommendation[];
   budgetAmount: number | null;
   budgetCurrency: string | null;
+  livingAmount: number | null;
+  livingCurrency: string | null;
 }
 
 interface Row {
@@ -36,12 +42,20 @@ const MAX_ROWS = 8;
  * mixed currencies show both segments with no verdict.
  */
 export function BudgetPlanner({
+  studentId,
   recommendations,
   budgetAmount,
   budgetCurrency,
+  livingAmount,
+  livingCurrency,
 }: BudgetPlannerProps) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingRent, setEditingRent] = useState(false);
+  const [rentAmount, setRentAmount] = useState("");
+  const [rentCurrency, setRentCurrency] = useState("");
+  const [savingRent, setSavingRent] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +86,35 @@ export function BudgetPlanner({
     };
   }, [recommendations]);
 
+  async function saveRent(): Promise<void> {
+    const amount = Number(rentAmount);
+    const currency = rentCurrency.trim().toUpperCase();
+    if (rentAmount.trim() === "" || !Number.isFinite(amount) || amount < 0) {
+      setError("Enter a monthly rent of 0 or more.");
+      return;
+    }
+    if (!/^[A-Z]{3}$/.test(currency)) {
+      setError("Enter a 3-letter currency (e.g. INR, USD, GBP).");
+      return;
+    }
+    setSavingRent(true);
+    setError(null);
+    try {
+      await updateStudent(studentId, {
+        livingCostAmount: amount,
+        livingCostCurrency: currency,
+      });
+      setEditingRent(false);
+      setRentAmount("");
+      setRentCurrency("");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not save the rent.");
+    } finally {
+      setSavingRent(false);
+    }
+  }
+
   return (
     <section aria-labelledby="budget-planner-heading">
       <h2
@@ -82,6 +125,67 @@ export function BudgetPlanner({
       </h2>
       <Card>
         <CardContent className="space-y-4 pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[13px] text-slate-500">
+              {livingAmount != null && livingCurrency != null ? (
+                <>
+                  Monthly living (entered):{" "}
+                  <span className="font-medium tabular-nums text-slate-700">
+                    {formatMoney(livingAmount, livingCurrency)}
+                  </span>{" "}
+                  <button
+                    type="button"
+                    onClick={() => setEditingRent((v) => !v)}
+                    className="font-medium underline underline-offset-4"
+                  >
+                    Change
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingRent((v) => !v)}
+                  className="font-medium underline underline-offset-4"
+                >
+                  Add monthly rent / living costs
+                </button>
+              )}
+            </p>
+          </div>
+          {editingRent && (
+            <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-600">
+                Monthly amount
+                <input
+                  aria-label="Monthly living amount"
+                  type="number"
+                  step="any"
+                  min="0"
+                  placeholder="1200"
+                  className="mt-1 block w-36 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={rentAmount}
+                  onChange={(e) => setRentAmount(e.target.value)}
+                  disabled={savingRent}
+                />
+              </label>
+              <label className="block text-xs font-medium text-slate-600">
+                Currency
+                <input
+                  aria-label="Living currency"
+                  type="text"
+                  maxLength={3}
+                  placeholder="GBP"
+                  className="mt-1 block w-24 rounded-md border border-input bg-background px-3 py-2 text-sm uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={rentCurrency}
+                  onChange={(e) => setRentCurrency(e.target.value)}
+                  disabled={savingRent}
+                />
+              </label>
+              <Button size="sm" disabled={savingRent} onClick={() => void saveRent()}>
+                {savingRent ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          )}
           {error != null && (
             <p role="alert" className="text-[13px] text-red-700">
               {error}
@@ -94,51 +198,79 @@ export function BudgetPlanner({
             rows.map((row) => {
               if (row.details == null) return null;
               const split = splitCosts(row.details);
+              // Counsellor-entered monthly living fills catalogue gaps.
+              // Manual input outranks unknown — but it is labelled entered.
+              const enteredLiving =
+                split.living == null &&
+                livingAmount != null &&
+                livingCurrency != null
+                  ? normalizeTotal(
+                      livingAmount,
+                      "monthly",
+                      row.details.durationMonths
+                    )
+                  : null;
+              const living = split.living ?? enteredLiving;
+              const livingCurrencyShown =
+                split.living != null ? split.livingCurrency : livingCurrency;
+              const livingEntered = split.living == null && enteredLiving != null;
+              const total =
+                split.tuition != null &&
+                living != null &&
+                split.tuitionCurrency != null &&
+                livingCurrencyShown != null &&
+                split.tuitionCurrency === livingCurrencyShown
+                  ? split.tuition + living
+                  : split.total;
               // Each bar scales to its own row (currencies differ across
               // courses, so rows are not comparable by bar length). The
               // budget marker appears only when the total shares the
               // budget's currency.
+              const totalCurrencyShown =
+                total != null
+                  ? (split.totalCurrency ?? livingCurrencyShown)
+                  : null;
               const comparable =
-                split.total != null &&
+                total != null &&
                 budgetAmount != null &&
                 budgetCurrency != null &&
-                split.totalCurrency === budgetCurrency;
+                totalCurrencyShown === budgetCurrency;
               // Honest partial: one side known still informs (e.g. tuition
               // annualizes but living was never published). Never summed
               // with an unknown side, never estimated.
               const partial =
-                split.total == null &&
-                (split.tuition != null || split.living != null)
+                total == null &&
+                (split.tuition != null || living != null)
                   ? {
                       label:
                         split.tuition != null && split.tuitionCurrency != null
                           ? `Tuition ${formatMoney(split.tuition, split.tuitionCurrency)} + living unknown`
                           : `Living ${formatMoney(
-                              split.living as number,
-                              split.livingCurrency as string
-                            )} + tuition unknown`,
+                              living as number,
+                              livingCurrencyShown as string
+                            )}${livingEntered ? " (entered)" : ""} + tuition unknown`,
                     }
                   : null;
               const rowMax = Math.max(
                 split.tuition ?? 0,
-                split.living ?? 0,
-                split.total ?? 0,
+                living ?? 0,
+                total ?? 0,
                 comparable ? (budgetAmount as number) : 0,
                 1
               );
               const tuitionShare =
                 split.tuition != null ? (split.tuition / rowMax) * 100 : 0;
               const livingShare =
-                split.living != null ? (split.living / rowMax) * 100 : 0;
+                living != null ? (living / rowMax) * 100 : 0;
               const markerShare = comparable
                 ? ((budgetAmount as number) / rowMax) * 100
                 : null;
               const verdict = comparable
-                ? (split.total as number) <= (budgetAmount as number)
+                ? (total as number) <= (budgetAmount as number)
                   ? { label: "Within budget", tone: "success" as const }
                   : {
                       label: `${formatMoney(
-                        (split.total as number) - (budgetAmount as number),
+                        (total as number) - (budgetAmount as number),
                         budgetCurrency as string
                       )} over`,
                       tone: "warning" as const,
@@ -169,8 +301,11 @@ export function BudgetPlanner({
                     {split.tuition != null && (
                       <div className="h-full bg-sky-500" style={{ width: `${tuitionShare}%` }} />
                     )}
-                    {split.living != null && (
-                      <div className="h-full bg-emerald-500" style={{ width: `${livingShare}%` }} />
+                    {living != null && (
+                      <div
+                        className={`h-full ${livingEntered ? "bg-emerald-300" : "bg-emerald-500"}`}
+                        style={{ width: `${livingShare}%` }}
+                      />
                     )}
                     {markerShare != null && (
                       <div
@@ -185,11 +320,11 @@ export function BudgetPlanner({
                       ? `Tuition ${formatMoney(split.tuition, split.tuitionCurrency)}`
                       : "Tuition unknown"}
                     {" · "}
-                    {split.living != null && split.livingCurrency != null
-                      ? `Living ${formatMoney(split.living, split.livingCurrency)}`
+                    {living != null && livingCurrencyShown != null
+                      ? `Living ${formatMoney(living, livingCurrencyShown)}${livingEntered ? " (entered)" : ""}`
                       : "Living unknown"}
-                    {split.total != null && split.totalCurrency != null
-                      ? ` · Total ${formatMoney(split.total, split.totalCurrency)}`
+                    {total != null && totalCurrencyShown != null
+                      ? ` · Total ${formatMoney(total, totalCurrencyShown)}`
                       : partial != null
                         ? ` · ${partial.label}`
                         : ""}

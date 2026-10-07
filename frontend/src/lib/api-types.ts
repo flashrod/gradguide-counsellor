@@ -78,6 +78,8 @@ export interface ApiStudent {
   preferredCountries: string[];
   preferredIntake: string | null;
   workExperienceMonths: number | null;
+  livingCostAmount: number | null;
+  livingCostCurrency: string | null;
 }
 
 export interface ApiStudentResponse {

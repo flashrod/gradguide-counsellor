@@ -24,6 +24,8 @@ export interface CreateStudentInput {
   preferredCountries?: string[];
   preferredIntake?: string | null;
   workExperienceMonths?: number | null;
+  livingCostAmount?: number | null;
+  livingCostCurrency?: string | null;
 }
 
 export interface StudentSummary {
@@ -57,6 +59,8 @@ export async function createStudentProfile(input: CreateStudentInput): Promise<S
       preferredCountries: input.preferredCountries ?? [],
       preferredIntake: input.preferredIntake ?? null,
       workExperienceMonths: input.workExperienceMonths ?? null,
+      livingCostAmount: input.livingCostAmount ?? null,
+      livingCostCurrency: input.livingCostCurrency ?? null,
     })
     .returning({ id: students.id });
   if (row == null) throw new Error("Could not create the student profile.");
@@ -79,6 +83,8 @@ export interface UpdateStudentInput {
   preferredCountries?: string[];
   preferredIntake?: string | null;
   workExperienceMonths?: number | null;
+  livingCostAmount?: number | null;
+  livingCostCurrency?: string | null;
 }
 
 export async function updateStudentProfile(
@@ -99,6 +105,10 @@ export async function updateStudentProfile(
   if (input.preferredIntake !== undefined) patch.preferredIntake = input.preferredIntake;
   if (input.workExperienceMonths !== undefined) {
     patch.workExperienceMonths = input.workExperienceMonths;
+  }
+  if (input.livingCostAmount !== undefined) patch.livingCostAmount = input.livingCostAmount;
+  if (input.livingCostCurrency !== undefined) {
+    patch.livingCostCurrency = input.livingCostCurrency;
   }
   if (Object.keys(patch).length === 0) {
     // Nothing to change — still validates the student exists.

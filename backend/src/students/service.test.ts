@@ -45,8 +45,18 @@ describe.skipIf(!process.env["DATABASE_URL"])("student profiles (live database)"
     expect(after.name).toBe(before.name);
   });
 
-  it("accepts an empty patch as a no-op", async () => {
-    const profile = await trackStudent(`Noop ${runId}`);
+  it("stores counsellor-entered living costs", async () => {
+    const profile = await trackStudent(`Rent ${runId}`);
+    expect(profile.livingCostAmount).toBeNull();
+    const after = await updateStudentProfile(profile.id, {
+      livingCostAmount: 1200,
+      livingCostCurrency: "GBP",
+    });
+    expect(after.livingCostAmount).toBe(1200);
+    expect(after.livingCostCurrency).toBe("GBP");
+  });
+
+  it("accepts an empty patch as a no-op", async () => {    const profile = await trackStudent(`Noop ${runId}`);
     const after = await updateStudentProfile(profile.id, {});
     expect(after.id).toBe(profile.id);
     expect(after.name).toBe(profile.name);

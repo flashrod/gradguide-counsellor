@@ -198,6 +198,14 @@ export const students = pgTable(
     // already treats null as unknown (never disqualifying).
     budgetAmount: numeric("budget_amount", { precision: 12, scale: 2, mode: "number" }),
     budgetCurrency: varchar("budget_currency", { length: 3 }),
+    /**
+     * Counsellor-entered monthly living cost (rent etc.) for the student's
+     * target situation. Falls back into cost displays wherever the
+     * catalogue has no published living figure — manual input outranks
+     * unknown, per the standing precedence rule. Monthly by construction.
+     */
+    livingCostAmount: numeric("living_cost_amount", { precision: 12, scale: 2, mode: "number" }),
+    livingCostCurrency: varchar("living_cost_currency", { length: 3 }),
     careerGoal: text("career_goal"),
     preferredCountries: text("preferred_countries")
       .array()
