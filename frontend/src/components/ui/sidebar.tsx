@@ -69,11 +69,16 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = ({
+  mobileBrand,
+  ...props
+}: React.ComponentProps<typeof motion.div> & {
+  mobileBrand?: React.ReactNode;
+}) => {
   return (
     <>
       <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
+      <MobileSidebar brand={mobileBrand} {...(props as React.ComponentProps<"div">)} />
     </>
   );
 };
@@ -107,23 +112,26 @@ export const DesktopSidebar = ({
 export const MobileSidebar = ({
   className,
   children,
+  brand,
   ...props
-}: React.ComponentProps<"div">) => {
+}: React.ComponentProps<"div"> & { brand?: React.ReactNode }) => {
   const { open, setOpen } = useSidebar();
   return (
     <>
       <div
-        className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden  items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
-        )}
+        className="flex h-14 w-full shrink-0 flex-row items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden"
         {...props}
       >
-        <div className="flex justify-end z-20 w-full">
-          <IconMenu2
-            className="text-neutral-800 dark:text-neutral-200"
-            onClick={() => setOpen(!open)}
-          />
-        </div>
+        <div className="flex min-w-0 items-center">{brand}</div>
+        <button
+          type="button"
+          aria-label="Open navigation menu"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+          className="-mr-1 rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100"
+        >
+          <IconMenu2 aria-hidden />
+        </button>
         <AnimatePresence>
           {open && (
             <motion.div
@@ -135,17 +143,29 @@ export const MobileSidebar = ({
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
+                "fixed inset-0 z-[100] flex h-full w-full flex-col justify-between bg-white p-10 dark:bg-neutral-900",
                 className
               )}
             >
-              <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200"
-                onClick={() => setOpen(!open)}
+              <button
+                type="button"
+                aria-label="Close navigation menu"
+                onClick={() => setOpen(false)}
+                className="absolute top-6 right-6 z-50 rounded-lg p-2 text-neutral-800 transition-colors hover:bg-slate-100 dark:text-neutral-200"
               >
-                <IconX />
+                <IconX aria-hidden />
+              </button>
+              <div
+                className="flex min-h-0 flex-1 flex-col justify-between gap-10"
+                onClick={(event) => {
+                  // Navigating closes the drawer; other taps stay put.
+                  if ((event.target as HTMLElement).closest("a") != null) {
+                    setOpen(false);
+                  }
+                }}
+              >
+                {children}
               </div>
-              {children}
             </motion.div>
           )}
         </AnimatePresence>

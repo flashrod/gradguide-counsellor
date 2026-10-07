@@ -21,7 +21,9 @@ export const auth = betterAuth({
   trustedOrigins: [env.FRONTEND_URL],
   emailAndPassword: {
     enabled: true,
-    minPasswordLength: 8,
+    // 6 keeps short demo passwords working; counsellor accounts are
+    // created out-of-band, never via public signup.
+    minPasswordLength: 6,
   },
   advanced: {
     cookiePrefix: "gradguide",

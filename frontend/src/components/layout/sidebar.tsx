@@ -49,10 +49,10 @@ function Brand() {
         }}
         className="flex flex-col whitespace-pre leading-none"
       >
-        <span className="text-[15px] font-semibold tracking-tight text-slate-900">
+        <span className="block text-[15px] font-semibold tracking-tight text-slate-900">
           GradGuide
         </span>
-        <span className="mt-1 text-[10px] font-medium uppercase tracking-widest text-slate-400">
+        <span className="mt-1 block text-[10px] font-medium uppercase tracking-widest text-slate-400">
           Copilot
         </span>
       </motion.span>
@@ -157,6 +157,19 @@ function CounsellorProfile({
   );
 }
 
+function MobileBrand() {
+  return (
+    <Link href="/workspace" className="flex items-center gap-2" aria-label="GradGuide home">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+        <GraduationCap className="h-4 w-4" aria-hidden />
+      </span>
+      <span className="text-sm font-semibold tracking-tight text-slate-900">
+        GradGuide
+      </span>
+    </Link>
+  );
+}
+
 export function Sidebar({
   user,
 }: {
@@ -166,7 +179,10 @@ export function Sidebar({
 
   return (
     <AceternitySidebar open={open} setOpen={setOpen}>
-      <SidebarBody className="justify-between gap-10 border-r bg-white">
+      <SidebarBody
+        className="justify-between gap-10 border-r bg-white"
+        mobileBrand={<MobileBrand />}
+      >
         <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
           <Brand />
           <nav className="mt-8 flex flex-col gap-1" aria-label="Primary">
