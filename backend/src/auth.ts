@@ -27,6 +27,10 @@ export const auth = betterAuth({
   },
   advanced: {
     cookiePrefix: "gradguide",
+    defaultCookieAttributes: {
+      sameSite: env.BETTER_AUTH_URL.startsWith("https://") ? "none" : "lax",
+      secure: env.BETTER_AUTH_URL.startsWith("https://"),
+    },
   },
 });
 
