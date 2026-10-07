@@ -121,3 +121,15 @@
 
   --color-sky-100: #0c2f4a;
 }
+
+/* Chrome/Safari autofill forces pale-yellow + dark text, unreadable on
+ * dark inputs. Keep the filled text light while in dark mode. */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:first-line {
+  -webkit-text-fill-color: #f1f5f9;
+  caret-color: #f1f5f9;
+  -webkit-box-shadow: 0 0 0 1000px #141c33 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
