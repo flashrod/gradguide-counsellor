@@ -6,7 +6,7 @@ import {
   getStudentById,
   StudentNotFoundError,
 } from "../recommendations/service.js";
-import { createStudentProfile, listStudentProfiles } from "../students/service.js";
+import { createStudentProfile, listStudentProfiles, updateStudentProfile } from "../students/service.js";
 
 const paramsSchema = z.object({
   studentId: z.string().uuid("studentId must be a UUID"),
@@ -71,6 +71,53 @@ studentsRouter.get("/students/:studentId", async (req: Request, res: Response) =
   }
   try {
     res.json({ student: await getStudentById(parsed.data.studentId) });
+  } catch (error) {
+    if (error instanceof StudentNotFoundError) {
+      res.status(404).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
+});
+
+/**
+ * PATCH /api/students/:studentId — record an answer to the next-best
+ * question (or any counsellor-known correction). Authenticated. Only the
+ * supplied keys change; unknown values stay null, never zero. Updates the
+ * live profile only — past session snapshots are copies and never rewrite.
+ */
+const updateStudentSchema = z.object({
+  gpaValue: z.number().finite().min(0).optional(),
+  gpaScale: z.number().int().positive().optional(),
+  ieltsOverall: z.number().finite().min(0).max(9).nullable().optional(),
+  toeflOverall: z.number().int().min(0).max(120).nullable().optional(),
+  budgetAmount: z.number().finite().min(0).nullable().optional(),
+  budgetCurrency: z.string().regex(/^[A-Z]{3}$/).nullable().optional(),
+  careerGoal: z.string().max(500).nullable().optional(),
+  preferredCountries: z.array(z.string().min(1).max(100)).max(20).optional(),
+  preferredIntake: z.string().max(100).nullable().optional(),
+  workExperienceMonths: z.number().int().min(0).max(600).nullable().optional(),
+});
+
+studentsRouter.patch("/students/:studentId", requireAuth, async (req: Request, res: Response) => {
+  const params = paramsSchema.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.issues[0]?.message });
+    return;
+  }
+  if (req.body == null || typeof req.body !== "object") {
+    res.status(400).json({ error: "Provide at least one profile field to update." });
+    return;
+  }
+  const parsed = updateStudentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message });
+    return;
+  }
+  try {
+    res.json({
+      student: await updateStudentProfile(params.data.studentId, parsed.data),
+    });
   } catch (error) {
     if (error instanceof StudentNotFoundError) {
       res.status(404).json({ error: error.message });

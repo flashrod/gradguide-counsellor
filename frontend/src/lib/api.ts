@@ -234,7 +234,52 @@ export async function createSession(
   return postJson(`/api/students/${studentId}/sessions`, {});
 }
 
-export async function listSessions(
+/** Partial profile update — the "answer the next-best-question" write path. */
+export interface UpdateStudentPatch {
+  gpaValue?: number;
+  gpaScale?: number;
+  ieltsOverall?: number | null;
+  toeflOverall?: number | null;
+  budgetAmount?: number | null;
+  budgetCurrency?: string | null;
+  careerGoal?: string | null;
+  preferredCountries?: string[];
+  preferredIntake?: string | null;
+  workExperienceMonths?: number | null;
+}
+
+export async function updateStudent(
+  studentId: string,
+  patch: UpdateStudentPatch
+): Promise<ApiStudentResponse> {
+  let response: Response;
+  try {
+    response = await fetch(`${backendBaseUrl()}/api/students/${studentId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+  } catch {
+    throw new ApiError(0, "Recommendation service is unreachable.");
+  }
+  if (response.status === 404) {
+    throw new ApiError(404, "Student not found.");
+  }
+  if (response.status === 400 || response.status === 401) {
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new ApiError(
+      response.status,
+      data?.error ?? "Could not save the answer."
+    );
+  }
+  if (!response.ok) {
+    throw new ApiError(response.status, "Could not save the answer.");
+  }
+  return (await response.json()) as ApiStudentResponse;
+}export async function listSessions(
   studentId: string,
   options?: ApiRequestOptions
 ): Promise<{ sessions: ApiSessionSummary[] }> {

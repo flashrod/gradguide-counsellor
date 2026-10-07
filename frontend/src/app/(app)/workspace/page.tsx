@@ -111,7 +111,11 @@ export default async function WorkspacePage({
         <h2 id="next-question-heading" className="sr-only">
           Next best question
         </h2>
-        <NextQuestionCard data={nextQuestion} />
+        <NextQuestionCard
+          data={nextQuestion}
+          studentId={student.id}
+          activeSessionId={activeSession?.id ?? null}
+        />
       </section>
 
       <WhatIfPanel
