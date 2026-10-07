@@ -6,8 +6,19 @@ const PROTECTED_PREFIXES = ["/workspace", "/sessions", "/live", "/deadlines"];
  * Route protection (Milestone 11). Verifies the backend session by
  * forwarding the request cookies; unauthenticated visits redirect to
  * /login. The backend re-verifies on every API call — this gate is UX,
- * not the authorization boundary.
+ * not the authorization boundary. One retry covers transient backend
+ * hiccups (e.g. database cold starts) so a slow first byte does not
+ * bounce a signed-in counsellor back to the login form.
  */
+async function fetchSession(backendUrl: string, cookie: string) {
+  const response = await fetch(`${backendUrl}/api/auth/get-session`, {
+    headers: { cookie },
+  });
+  if (!response.ok) throw new Error(`session check failed: ${response.status}`);
+  const session = (await response.json()) as { user?: unknown };
+  if (session?.user == null) throw new Error("unauthenticated");
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const protectedRoute = PROTECTED_PREFIXES.some(
@@ -17,19 +28,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   const backendUrl =
     process.env["BACKEND_API_URL"] ?? "http://localhost:4000";
+  const cookie = request.headers.get("cookie") ?? "";
   try {
-    const response = await fetch(`${backendUrl}/api/auth/get-session`, {
-      headers: { cookie: request.headers.get("cookie") ?? "" },
-    });
-    if (!response.ok) throw new Error("unauthenticated");
-    const session = (await response.json()) as { user?: unknown };
-    if (session?.user == null) throw new Error("unauthenticated");
-    return NextResponse.next();
+    await fetchSession(backendUrl, cookie);
   } catch {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    try {
+      await fetchSession(backendUrl, cookie);
+    } catch {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
+  return NextResponse.next();
 }
 
 export const config = {

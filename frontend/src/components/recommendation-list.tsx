@@ -13,9 +13,10 @@ export const MAX_COMPARE_SELECTION = 3;
 
 interface RecommendationListProps {
   recommendations: ApiRecommendation[];
+  studentId: string;
 }
 
-export function RecommendationList({ recommendations }: RecommendationListProps) {
+export function RecommendationList({ recommendations, studentId }: RecommendationListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -75,7 +76,7 @@ export function RecommendationList({ recommendations }: RecommendationListProps)
               </Button>
               <Button size="sm" disabled={selectedIds.length < 2} asChild>
                 <Link
-                  href={`/workspace/compare?ids=${selectedIds.join(",")}`}
+                  href={`/workspace/compare?student=${studentId}&ids=${selectedIds.join(",")}`}
                   aria-disabled={selectedIds.length < 2}
                 >
                   Compare selected

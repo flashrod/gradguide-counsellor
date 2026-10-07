@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeftRight,
   CheckCircle2,
-  ChevronDown,
   ExternalLink,
   MapPin,
+  X,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -38,8 +38,17 @@ export function RecommendationCard({
   selected = false,
   onToggleSelect,
 }: RecommendationCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const isEligible = recommendation.eligibilityStatus === "eligible";
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent): void {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <Card className={cn("flex flex-col", selected && "ring-2 ring-slate-900")}>
@@ -125,14 +134,10 @@ export function RecommendationCard({
             variant="outline"
             size="sm"
             className="flex-1"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((open) => !open)}
+            aria-haspopup="dialog"
+            onClick={() => setOpen(true)}
           >
             Why {recommendation.overallScore}?
-            <ChevronDown
-              aria-hidden
-              className={cn("transition-transform", expanded && "rotate-180")}
-            />
           </Button>
           {onToggleSelect != null && (
             <Button
@@ -148,50 +153,82 @@ export function RecommendationCard({
           )}
         </div>
 
-        {expanded && (
-          <div className="mt-4 space-y-4">
-            {recommendation.reasons.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Why this matches
-                </p>
-                <ul className="mt-2 space-y-1.5">
-                  {recommendation.reasons.map((reason, index) => (
-                    <li
-                      key={`${reason.category}-${index}`}
-                      className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-600"
-                    >
-                      <CheckCircle2
-                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600"
-                        aria-hidden
-                      />
-                      {reason.message}
-                    </li>
-                  ))}
-                </ul>
+        {open && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setOpen(false);
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Why ${recommendation.courseName} scored ${recommendation.overallScore}`}
+              className="w-full max-w-md rounded-lg border bg-white p-6 shadow-xl dark:bg-slate-100"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Why {recommendation.overallScore}?
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-slate-500">
+                    {recommendation.courseName} · {recommendation.universityName}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Close"
+                  onClick={() => setOpen(false)}
+                >
+                  <X aria-hidden />
+                </Button>
               </div>
-            )}
-            {recommendation.warnings.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Needs verification
-                </p>
-                <ul className="mt-2 space-y-1.5">
-                  {recommendation.warnings.map((warning, index) => (
-                    <li
-                      key={`${warning.category}-${index}`}
-                      className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-600"
-                    >
-                      <AlertTriangle
-                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600"
-                        aria-hidden
-                      />
-                      {warning.message}
-                    </li>
-                  ))}
-                </ul>
+              <div className="mt-4 max-h-[60vh] space-y-4 overflow-y-auto">
+                {recommendation.reasons.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Why this matches
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {recommendation.reasons.map((reason, index) => (
+                        <li
+                          key={`${reason.category}-${index}`}
+                          className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-600"
+                        >
+                          <CheckCircle2
+                            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600"
+                            aria-hidden
+                          />
+                          {reason.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {recommendation.warnings.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Needs verification
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {recommendation.warnings.map((warning, index) => (
+                        <li
+                          key={`${warning.category}-${index}`}
+                          className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-600"
+                        >
+                          <AlertTriangle
+                            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600"
+                            aria-hidden
+                          />
+                          {warning.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )}
       </CardContent>

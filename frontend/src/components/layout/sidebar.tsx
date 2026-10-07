@@ -21,6 +21,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { LogoutButton } from "@/components/logout-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -41,7 +42,7 @@ function Brand() {
       className="relative z-20 flex items-center space-x-2.5 py-1"
       aria-label="GradGuide home"
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white">
         <GraduationCap className="h-4.5 w-4.5" aria-hidden />
       </span>
       <motion.span
@@ -81,7 +82,8 @@ function NavLink({
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "group/sidebar flex items-center justify-start gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+        "group/sidebar flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors",
+        showLabel ? "justify-start px-2.5" : "justify-center px-2",
         isActive
           ? "bg-slate-100 text-slate-900"
           : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
@@ -124,7 +126,7 @@ function CounsellorProfile({
     : "?";
   return (
     <div className="flex items-center gap-3 px-1 py-1">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[11px] font-semibold text-white">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-600 text-[11px] font-semibold text-white">
         {initials}
       </span>
       <motion.span
@@ -162,7 +164,7 @@ function CounsellorProfile({
 function MobileBrand() {
   return (
     <Link href="/workspace" className="flex items-center gap-2" aria-label="GradGuide home">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-600 text-white">
         <GraduationCap className="h-4 w-4" aria-hidden />
       </span>
       <span className="text-sm font-semibold tracking-tight text-slate-900">
@@ -199,6 +201,12 @@ export function Sidebar({
           </nav>
         </div>
         <div className="border-t border-slate-100 pt-3">
+          <div className="flex items-center justify-between px-1 pb-1">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400">
+              Theme
+            </span>
+            <ThemeToggle />
+          </div>
           <CounsellorProfile user={user} />
         </div>
       </SidebarBody>

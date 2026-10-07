@@ -89,11 +89,15 @@ export const DesktopSidebar = ({
   ...props
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate } = useSidebar();
+  const collapsed = animate && !open;
   return (
     <>
       <motion.div
         className={cn(
-          "h-full px-4 py-4 hidden  md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0",
+          // Narrow padding on the collapsed 60px rail: with px-4 the
+          // icons lose their right edge to the padding + link insets.
+          "h-full py-4 hidden  md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0 overflow-hidden",
+          collapsed ? "px-2" : "px-4",
           className
         )}
         animate={{
@@ -119,7 +123,7 @@ export const MobileSidebar = ({
   return (
     <>
       <div
-        className="flex h-14 w-full shrink-0 flex-row items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden"
+        className="flex h-14 w-full shrink-0 flex-row items-center justify-between border-b border-slate-200 bg-white px-4 md:hidden dark:bg-slate-50"
         {...props}
       >
         <div className="flex min-w-0 items-center">{brand}</div>

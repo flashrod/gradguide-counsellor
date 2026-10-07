@@ -50,7 +50,7 @@ function toggleCourse(name: string): void {
 
 describe("RecommendationList selection", () => {
   it("selects and deselects a course", () => {
-    render(<RecommendationList recommendations={RECS} />);
+    render(<RecommendationList recommendations={RECS} studentId="student-1" />);
     toggleCourse("Course A");
     expect(screen.getByText("1 selected")).toBeDefined();
     toggleCourse("Course A");
@@ -58,15 +58,17 @@ describe("RecommendationList selection", () => {
   });
 
   it("enables comparison at 2 selections with a correct link", () => {
-    render(<RecommendationList recommendations={RECS} />);
+    render(<RecommendationList recommendations={RECS} studentId="student-1" />);
     toggleCourse("Course A");
     toggleCourse("Course B");
     const link = screen.getByText("Compare selected").closest("a");
-    expect(link?.getAttribute("href")).toBe("/workspace/compare?ids=a,b");
+    expect(link?.getAttribute("href")).toBe(
+      "/workspace/compare?student=student-1&ids=a,b"
+    );
   });
 
   it("blocks a fourth selection with a message", () => {
-    render(<RecommendationList recommendations={RECS} />);
+    render(<RecommendationList recommendations={RECS} studentId="student-1" />);
     toggleCourse("Course A");
     toggleCourse("Course B");
     toggleCourse("Course C");
@@ -78,7 +80,7 @@ describe("RecommendationList selection", () => {
   });
 
   it("clears the selection", () => {
-    render(<RecommendationList recommendations={RECS} />);
+    render(<RecommendationList recommendations={RECS} studentId="student-1" />);
     toggleCourse("Course A");
     fireEvent.click(screen.getByText("Clear"));
     expect(screen.queryByText("1 selected")).toBeNull();
