@@ -21,12 +21,9 @@ export const auth = betterAuth({
   trustedOrigins: [env.FRONTEND_URL],
   emailAndPassword: {
     enabled: true,
-    // 6 keeps short demo passwords working; counsellor accounts are
-    // created out-of-band, never via public signup. Public registration
-    // is disabled in production only — local seed and tests create users
-    // through auth.api.signUpEmail, which honors this flag too.
-    // (Render sets NODE_ENV=production; vitest sets NODE_ENV=test.)
-    disableSignUp: process.env["NODE_ENV"] === "production",
+    // 6 keeps short demo passwords working. Registration is open:
+    // counsellors self-serve via the /signup page; sessions are scoped
+    // to each counsellor's own user id.
     minPasswordLength: 6,
   },
   advanced: {

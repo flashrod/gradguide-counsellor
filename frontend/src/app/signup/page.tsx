@@ -1,18 +1,18 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { signIn } from "@/lib/auth-client";
+import { signUp } from "@/lib/auth-client";
 
-function LoginForm() {
+export default function SignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState("demo@gradguide.local");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,17 +20,17 @@ function LoginForm() {
   async function submit(): Promise<void> {
     setBusy(true);
     setError(null);
-    const result = await signIn.email(
-      { email: email.trim(), password },
+    const result = await signUp.email(
+      { name: name.trim(), email: email.trim(), password },
       {
         onError: (context) => {
-          setError(context.error.message ?? "Sign-in failed.");
+          setError(context.error.message ?? "Sign-up failed.");
         },
       }
     );
     setBusy(false);
     if (result.error == null) {
-      router.push(searchParams.get("next") ?? "/workspace");
+      router.push("/workspace");
       router.refresh();
     }
   }
@@ -51,7 +51,7 @@ function LoginForm() {
             </span>
           </div>
           <h1 className="mt-6 text-xl font-semibold tracking-tight text-slate-900">
-            Sign in
+            Create account
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Counsellor access only.
@@ -63,6 +63,18 @@ function LoginForm() {
               void submit();
             }}
           >
+            <label className="block text-xs font-medium text-slate-600">
+              Name
+              <input
+                aria-label="Name"
+                type="text"
+                required
+                autoComplete="name"
+                className={`${inputClass} mt-1`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
             <label className="block text-xs font-medium text-slate-600">
               Email
               <input
@@ -81,7 +93,8 @@ function LoginForm() {
                 aria-label="Password"
                 type="password"
                 required
-                autoComplete="current-password"
+                minLength={6}
+                autoComplete="new-password"
                 className={`${inputClass} mt-1`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -93,25 +106,17 @@ function LoginForm() {
               </p>
             )}
             <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? "Signing in…" : "Sign in"}
+              {busy ? "Creating account…" : "Create account"}
             </Button>
           </form>
           <p className="mt-4 text-center text-[13px] text-slate-500">
-            No account yet?{" "}
-            <Link href="/signup" className="font-medium text-slate-900 underline">
-              Create one
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-slate-900 underline">
+              Sign in
             </Link>
           </p>
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   );
 }
