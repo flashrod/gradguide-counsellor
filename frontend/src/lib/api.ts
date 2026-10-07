@@ -21,10 +21,12 @@ import type {
 const SERVER_BACKEND_URL =
   process.env["BACKEND_API_URL"] ?? "http://localhost:4000";
 
-/** Server uses BACKEND_API_URL; the browser bundle uses NEXT_PUBLIC_API_URL. */
+/** Server uses BACKEND_API_URL; the browser rides the same-origin /api proxy. */
 export function backendBaseUrl(): string {
   if (typeof window !== "undefined") {
-    return process.env["NEXT_PUBLIC_API_URL"] ?? SERVER_BACKEND_URL;
+    // Same-origin proxy (see next.config.ts rewrites): no CORS,
+    // first-party auth cookies.
+    return "";
   }
   return SERVER_BACKEND_URL;
 }

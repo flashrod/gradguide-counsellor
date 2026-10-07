@@ -20,18 +20,23 @@ export default function SignupPage() {
   async function submit(): Promise<void> {
     setBusy(true);
     setError(null);
-    const result = await signUp.email(
-      { name: name.trim(), email: email.trim(), password },
-      {
-        onError: (context) => {
-          setError(context.error.message ?? "Sign-up failed.");
-        },
+    try {
+      const result = await signUp.email(
+        { name: name.trim(), email: email.trim(), password },
+        {
+          onError: (context) => {
+            setError(context.error.message ?? "Sign-up failed.");
+          },
+        }
+      );
+      if (result.error == null) {
+        router.push("/workspace");
+        router.refresh();
       }
-    );
-    setBusy(false);
-    if (result.error == null) {
-      router.push("/workspace");
-      router.refresh();
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
   }
 

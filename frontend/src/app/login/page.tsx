@@ -20,18 +20,23 @@ function LoginForm() {
   async function submit(): Promise<void> {
     setBusy(true);
     setError(null);
-    const result = await signIn.email(
-      { email: email.trim(), password },
-      {
-        onError: (context) => {
-          setError(context.error.message ?? "Sign-in failed.");
-        },
+    try {
+      const result = await signIn.email(
+        { email: email.trim(), password },
+        {
+          onError: (context) => {
+            setError(context.error.message ?? "Sign-in failed.");
+          },
+        }
+      );
+      if (result.error == null) {
+        router.push(searchParams.get("next") ?? "/workspace");
+        router.refresh();
       }
-    );
-    setBusy(false);
-    if (result.error == null) {
-      router.push(searchParams.get("next") ?? "/workspace");
-      router.refresh();
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
