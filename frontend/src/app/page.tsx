@@ -84,7 +84,7 @@ export default function LandingPage() {
           <Link
             href="/login"
             onClick={goToLogin}
-            className="w-fit rounded-full bg-white px-6 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-sky-100"
+            className="w-fit rounded-full bg-white px-6 py-2.5 text-sm font-medium text-slate-950 transition duration-300 hover:scale-[1.03] hover:shadow-[0_0_36px_rgba(56,189,248,0.55)]"
           >
             Sign in as counsellor
           </Link>
