@@ -279,7 +279,22 @@ export async function updateStudent(
     throw new ApiError(response.status, "Could not save the answer.");
   }
   return (await response.json()) as ApiStudentResponse;
-}export async function listSessions(
+}
+
+/** Manual student creation (same shape as the update patch, plus identity). */
+export interface CreateStudentBody extends UpdateStudentPatch {
+  name: string;
+  degree?: string;
+  field?: string;
+}
+
+export async function createStudent(
+  body: CreateStudentBody
+): Promise<ApiStudentResponse> {
+  return postJson("/api/students", body);
+}
+
+export async function listSessions(
   studentId: string,
   options?: ApiRequestOptions
 ): Promise<{ sessions: ApiSessionSummary[] }> {

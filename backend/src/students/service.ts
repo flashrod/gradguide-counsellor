@@ -16,8 +16,14 @@ export interface CreateStudentInput {
   field?: string;
   gpaValue?: number | null;
   gpaScale?: number | null;
+  ieltsOverall?: number | null;
+  toeflOverall?: number | null;
   budgetAmount?: number | null;
   budgetCurrency?: string | null;
+  careerGoal?: string | null;
+  preferredCountries?: string[];
+  preferredIntake?: string | null;
+  workExperienceMonths?: number | null;
 }
 
 export interface StudentSummary {
@@ -43,8 +49,14 @@ export async function createStudentProfile(input: CreateStudentInput): Promise<S
       field: input.field ?? "",
       gpa: input.gpaValue ?? null,
       gpaScale: input.gpaScale ?? null,
+      ieltsOverall: input.ieltsOverall ?? null,
+      toeflOverall: input.toeflOverall ?? null,
       budgetAmount: input.budgetAmount ?? null,
       budgetCurrency: input.budgetCurrency ?? null,
+      careerGoal: input.careerGoal ?? null,
+      preferredCountries: input.preferredCountries ?? [],
+      preferredIntake: input.preferredIntake ?? null,
+      workExperienceMonths: input.workExperienceMonths ?? null,
     })
     .returning({ id: students.id });
   if (row == null) throw new Error("Could not create the student profile.");

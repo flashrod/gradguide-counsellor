@@ -48,12 +48,17 @@ export default async function StudentsPage() {
         title="Students"
         subtitle="Manage student profiles and track counselling readiness."
         actions={
-          <Button size="sm" asChild>
-            <Link href="/workspace/resume">
-              <Plus aria-hidden />
-              Add student
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/students/new">Add manually</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/workspace/resume">
+                <Plus aria-hidden />
+                Add student
+              </Link>
+            </Button>
+          </div>
         }
       />
 

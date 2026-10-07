@@ -18,8 +18,14 @@ const createStudentSchema = z.object({
   field: z.string().max(200).default(""),
   gpaValue: z.number().finite().min(0).nullable().default(null),
   gpaScale: z.number().int().positive().nullable().default(null),
+  ieltsOverall: z.number().finite().min(0).max(9).nullable().default(null),
+  toeflOverall: z.number().int().min(0).max(120).nullable().default(null),
   budgetAmount: z.number().finite().min(0).nullable().default(null),
   budgetCurrency: z.string().regex(/^[A-Z]{3}$/).nullable().default(null),
+  careerGoal: z.string().max(500).nullable().default(null),
+  preferredCountries: z.array(z.string().min(1).max(100)).max(20).default([]),
+  preferredIntake: z.string().max(100).nullable().default(null),
+  workExperienceMonths: z.number().int().min(0).max(600).nullable().default(null),
 });
 
 export const studentsRouter: Router = Router();
@@ -49,8 +55,14 @@ studentsRouter.post("/students", requireAuth, async (req: Request, res: Response
       field: parsed.data.field,
       gpaValue: parsed.data.gpaValue,
       gpaScale: parsed.data.gpaScale,
+      ieltsOverall: parsed.data.ieltsOverall,
+      toeflOverall: parsed.data.toeflOverall,
       budgetAmount: parsed.data.budgetAmount,
       budgetCurrency: parsed.data.budgetCurrency,
+      careerGoal: parsed.data.careerGoal,
+      preferredCountries: parsed.data.preferredCountries,
+      preferredIntake: parsed.data.preferredIntake,
+      workExperienceMonths: parsed.data.workExperienceMonths,
     });
     res.status(201).json({ student });
   } catch {
