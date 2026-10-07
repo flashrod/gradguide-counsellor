@@ -462,6 +462,46 @@ export const deadlines = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// visa checklist
+// ---------------------------------------------------------------------------
+
+/**
+ * Visa readiness progress (counsellor-owned). Steps themselves are curated
+ * static content per country (see backend/src/visa/content.ts) — this
+ * table stores only per-student completion. General guidance, never
+ * legal advice.
+ *
+ * `counsellorId` owns the row (same pattern as counselling sessions).
+ * Deleting the student removes their checklist with them.
+ */
+export const visaChecklist = pgTable(
+  "visa_checklist",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    counsellorId: text("counsellor_id")
+      .notNull()
+      .references(() => authUser.id),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    country: text("country").notNull(),
+    itemKey: text("item_key").notNull(),
+    done: boolean("done").notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    index("visa_checklist_counsellor_id_idx").on(table.counsellorId),
+    index("visa_checklist_student_id_idx").on(table.studentId),
+    uniqueIndex("visa_checklist_unique_item_idx").on(
+      table.counsellorId,
+      table.studentId,
+      table.country,
+      table.itemKey
+    ),
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // relations
 // ---------------------------------------------------------------------------
 

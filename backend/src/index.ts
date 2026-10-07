@@ -8,6 +8,7 @@ import { auth } from "./auth.js";
 import { loadEnv } from "./env.js";
 import { recommendationsRouter } from "./routes/recommendations.js";
 import { deadlinesRouter } from "./routes/deadlines.js";
+import { visaRouter } from "./routes/visa.js";
 import { resumesRouter } from "./routes/resumes.js";
 import { coursesRouter } from "./routes/courses.js";
 import { nextQuestionRouter } from "./routes/next-question.js";
@@ -36,6 +37,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 
 app.use("/api", recommendationsRouter);
 app.use("/api", deadlinesRouter);
+app.use("/api", visaRouter);
 app.use("/api", coursesRouter);
 app.use("/api", nextQuestionRouter);
 app.use("/api", sessionsRouter);

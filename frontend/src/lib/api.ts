@@ -530,3 +530,41 @@ export async function deleteDeadline(deadlineId: string): Promise<void> {
     method: "DELETE",
   });
 }
+
+/** Visa readiness checklist (curated steps, per-student progress). */
+export interface ApiVisaStep {
+  key: string;
+  title: string;
+  detail: string;
+  done: boolean;
+}
+
+export interface ApiVisaCountry {
+  country: string;
+  note: string;
+  doneCount: number;
+  totalCount: number;
+  steps: ApiVisaStep[];
+}
+
+export async function getVisaChecklist(
+  studentId: string,
+  options?: ApiRequestOptions
+): Promise<{ countries: ApiVisaCountry[] }> {
+  return deadlineRequest(`/api/students/${studentId}/visa`, {
+    method: "GET",
+    ...(options?.cookie != null ? { headers: { cookie: options.cookie } } : {}),
+  });
+}
+
+export async function setVisaStep(
+  studentId: string,
+  country: string,
+  itemKey: string,
+  done: boolean
+): Promise<{ countries: ApiVisaCountry[] }> {
+  return deadlineRequest(`/api/students/${studentId}/visa`, {
+    method: "PATCH",
+    body: JSON.stringify({ country, itemKey, done }),
+  });
+}

@@ -11,6 +11,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   Settings,
+  ShieldCheck,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/courses", label: "Courses", icon: BookOpen },
   { href: "/sessions", label: "Sessions", icon: CalendarClock },
   { href: "/deadlines", label: "Deadlines", icon: BellRing },
+  { href: "/visa", label: "Visa", icon: ShieldCheck },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
