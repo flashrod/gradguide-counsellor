@@ -22,7 +22,7 @@ type SearchParams = {
 };
 
 function selectClass(): string {
-  return "rounded-md border border-input bg-background px-2 py-1.5 text-sm";
+  return "rounded-md border border-input bg-background px-2.5 py-2 text-sm";
 }
 
 export default async function CoursesPage({
@@ -64,22 +64,25 @@ export default async function CoursesPage({
 
       <Card>
         <CardContent className="pt-6">
-          <form method="GET" className="flex flex-wrap items-end gap-2">
-            <label className="block text-xs font-medium text-slate-600">
+          <form
+            method="GET"
+            className="grid grid-cols-2 items-end gap-x-4 gap-y-4 md:grid-cols-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto]"
+          >
+            <label className="col-span-2 block text-xs font-medium text-slate-600 md:col-span-3 xl:col-span-1">
               Search
-              <span className="mt-1 flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5">
-                <Search className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+              <span className="mt-1.5 flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
+                <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
                 <input
                   name="search"
                   defaultValue={params.search ?? ""}
                   placeholder="Course or university…"
-                  className="w-44 bg-transparent text-sm outline-none"
+                  className="w-full bg-transparent text-sm outline-none"
                 />
               </span>
             </label>
             <label className="block text-xs font-medium text-slate-600">
               Country
-              <select name="country" defaultValue={params.country ?? ""} className={`${selectClass()} mt-1 block`}>
+              <select name="country" defaultValue={params.country ?? ""} className={`${selectClass()} mt-1.5 block w-full`}>
                 <option value="">All</option>
                 {meta.countries.map((country) => (
                   <option key={country} value={country}>
@@ -90,7 +93,7 @@ export default async function CoursesPage({
             </label>
             <label className="block text-xs font-medium text-slate-600">
               Field
-              <select name="field" defaultValue={params.field ?? ""} className={`${selectClass()} mt-1 block`}>
+              <select name="field" defaultValue={params.field ?? ""} className={`${selectClass()} mt-1.5 block w-full`}>
                 <option value="">All</option>
                 {meta.fields.map((field) => (
                   <option key={field} value={field}>
@@ -101,7 +104,7 @@ export default async function CoursesPage({
             </label>
             <label className="block text-xs font-medium text-slate-600">
               Degree
-              <select name="degree" defaultValue={params.degree ?? ""} className={`${selectClass()} mt-1 block`}>
+              <select name="degree" defaultValue={params.degree ?? ""} className={`${selectClass()} mt-1.5 block w-full`}>
                 <option value="">All</option>
                 {meta.degrees.map((degree) => (
                   <option key={degree} value={degree}>
@@ -112,7 +115,7 @@ export default async function CoursesPage({
             </label>
             <label className="block text-xs font-medium text-slate-600">
               Sort
-              <select name="sort" defaultValue={sort} className={`${selectClass()} mt-1 block`}>
+              <select name="sort" defaultValue={sort} className={`${selectClass()} mt-1.5 block w-full`}>
                 <option value="university">University</option>
                 <option value="course">Course</option>
                 <option value="country">Country</option>
@@ -121,6 +124,17 @@ export default async function CoursesPage({
             <Button type="submit" size="sm">
               Apply
             </Button>
+            {(params.search != null && params.search !== "") ||
+            (params.country != null && params.country !== "") ||
+            (params.field != null && params.field !== "") ||
+            (params.degree != null && params.degree !== "") ? (
+              <Link
+                href="/courses"
+                className="pb-2 text-[13px] font-medium text-slate-500 underline underline-offset-4"
+              >
+                Clear
+              </Link>
+            ) : null}
           </form>
         </CardContent>
       </Card>
