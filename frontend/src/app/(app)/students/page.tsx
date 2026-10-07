@@ -91,7 +91,7 @@ export default async function StudentsPage() {
               </thead>
               <tbody className="divide-y">
                 {students.map((row) => (
-                  <tr key={row.id} className="bg-white">
+                  <tr key={row.id} className="bg-white dark:bg-white/[0.02]">
                     <td className="px-4 py-3 font-medium text-slate-900">{row.name}</td>
                     <td className="px-4 py-3 text-slate-600">{row.degree === "" ? "—" : row.degree}</td>
                     <td className="px-4 py-3 text-slate-600">{row.field === "" ? "—" : row.field}</td>

@@ -20,7 +20,7 @@ interface NextQuestionCardProps {
 }
 
 const inputClass =
-  "w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-white/10";
 
 function FieldAnswer({
   field,
@@ -233,7 +233,7 @@ function QuestionBody({
         type="button"
         variant="outline"
         size="sm"
-        className="mt-3 bg-white"
+        className="mt-3 bg-white dark:bg-transparent"
         disabled={busy}
         onClick={() => void addToNotes()}
       >

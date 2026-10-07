@@ -52,7 +52,7 @@ export function StudentProfileCard({ student }: StudentProfileCardProps) {
       <CardContent>
         <div className="flex items-start gap-4">
           <Avatar className="h-12 w-12">
-            <AvatarFallback className="bg-slate-900 text-sm font-semibold text-white">
+            <AvatarFallback className="bg-sky-600 text-sm font-semibold text-white">
               {initials(student.name)}
             </AvatarFallback>
           </Avatar>

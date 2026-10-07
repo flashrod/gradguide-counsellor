@@ -29,8 +29,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // Dark is the default theme; the inline script restores a stored
+      // light preference before paint (no flash). suppressHydrationWarning
+      // covers the class mismatch when light was stored.
+      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem('gradguide-theme')==='light'){document.documentElement.classList.remove('dark')}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="min-h-full bg-slate-50 text-slate-900">{children}</body>
     </html>
   );

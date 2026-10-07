@@ -31,9 +31,9 @@ const UUID_RE =
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-slate-100">
-      <header className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur dark:bg-slate-50/95">
         <div className="mx-auto flex max-w-xl items-center gap-2 px-4 py-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 text-white">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-sky-600 text-white">
             <GraduationCap className="h-4 w-4" aria-hidden />
           </span>
           <span className="text-sm font-semibold tracking-tight text-slate-900">

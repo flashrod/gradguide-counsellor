@@ -58,3 +58,66 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 }
+
+/* Default dark theme (also the app default — see the `dark` class on
+ * <html>). Instead of sprinkling dark: variants, the shared scales are
+ * remapped here so every slate/amber/emerald/red utility adapts at once.
+ * One rule: never pair bg-slate-900 with text-white for chrome — use the
+ * sky accent, which reads on both themes.
+ */
+.dark {
+  color-scheme: dark;
+  --background: #0a0f1e;
+  --foreground: oklch(0.93 0.012 255);
+  --card: #111a30;
+  --card-foreground: oklch(0.93 0.012 255);
+  --popover: #111a30;
+  --popover-foreground: oklch(0.93 0.012 255);
+  --primary: oklch(0.71 0.14 240);
+  --primary-foreground: #0a0f1e;
+  --secondary: #1a2440;
+  --secondary-foreground: oklch(0.93 0.012 255);
+  --muted: #1a2440;
+  --muted-foreground: #9dacc9;
+  --accent: #1a2440;
+  --accent-foreground: oklch(0.93 0.012 255);
+  --destructive: oklch(0.65 0.2 25);
+  --border: #26314d;
+  --input: #2b3a5c;
+  --ring: oklch(0.71 0.14 240);
+
+  --color-slate-50: #0a0f1e;
+  --color-slate-100: #141c33;
+  --color-slate-200: #26314d;
+  --color-slate-300: #7d8db0;
+  --color-slate-400: #9dacc9;
+  --color-slate-500: #aebbd4;
+  --color-slate-600: #c3cede;
+  --color-slate-700: #d6dfee;
+  --color-slate-800: #e2e9f7;
+  --color-slate-900: #f1f5f9;
+
+  --color-amber-50: #251a06;
+  --color-amber-100: #3a2a0c;
+  --color-amber-200: #57400f;
+  --color-amber-600: #f5b942;
+  --color-amber-700: #f7c45c;
+  --color-amber-800: #f9d488;
+  --color-amber-900: #fce3ae;
+
+  --color-emerald-50: #04281e;
+  --color-emerald-100: #06402f;
+  --color-emerald-200: #0a5c42;
+  --color-emerald-600: #34d399;
+  --color-emerald-700: #6ee7b7;
+  --color-emerald-800: #a7f3d0;
+
+  --color-red-50: #2b1111;
+  --color-red-200: #5c1a1a;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-red-800: #fecaca;
+
+  --color-sky-100: #0c2f4a;
+}

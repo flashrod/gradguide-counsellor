@@ -21,7 +21,7 @@ import type { ApiResumeDetail, ApiStudent, ApiStudentSummary } from "@/lib/api-t
 type Phase = "upload" | "review" | "done";
 
 const inputClass =
-  "mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none";
+  "mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none dark:bg-white/10 dark:text-white";
 
 function SourceBadge({ source }: { source: "resume" | "manual" | "missing" }) {
   if (source === "resume")

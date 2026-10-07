@@ -63,11 +63,11 @@ export function CompareTable({ entries }: CompareTableProps) {
     ])
   );
 
-  const labelCell = "sticky left-0 z-10 bg-white px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-slate-400 align-top";
+  const labelCell = "sticky left-0 z-10 bg-white px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-slate-400 align-top dark:bg-slate-100";
   const valueCell = "min-w-56 px-4 py-2.5 align-top text-sm text-slate-900";
 
   return (
-    <div className="overflow-x-auto rounded-xl border bg-white">
+    <div className="overflow-x-auto rounded-xl border bg-white dark:bg-slate-100">
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="border-b">

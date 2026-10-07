@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/page-header";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -65,6 +66,14 @@ export default function SettingsPage() {
             <p className="text-xs text-slate-400">
               Shared workspace defaults — per-counsellor preferences are out of scope for this build.
             </p>
+            <Separator />
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-medium text-slate-900">Appearance</p>
+                <p className="mt-0.5 text-slate-500">Dark mode is the default</p>
+              </div>
+              <ThemeToggle />
+            </div>
           </CardContent>
         </Card>
       </div>
