@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { Instrument_Serif } from "next/font/google";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { WavyBackground } from "@/components/ui/wavy-background";
 
@@ -32,6 +34,19 @@ const HIGHLIGHTS = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
+
+  // Cinematic exit into sign-in: same wavy backdrop on both pages, so the
+  // hero fading up and out reads as one continuous motion into the form
+  // fading in (see AuthShell entrance).
+  function goToLogin(event: React.MouseEvent): void {
+    event.preventDefault();
+    if (leaving) return;
+    setLeaving(true);
+    window.setTimeout(() => router.push("/login"), 480);
+  }
+
   return (
     <>
     <WavyBackground
@@ -43,8 +58,12 @@ export default function LandingPage() {
     >
       <motion.div
         initial={{ opacity: 0.0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }}
+        animate={leaving ? { opacity: 0, y: -32 } : { opacity: 1, y: 0 }}
+        transition={
+          leaving
+            ? { duration: 0.45, ease: "easeIn" }
+            : { delay: 0.3, duration: 0.8, ease: "easeInOut" }
+        }
         className="flex flex-col items-center gap-5 text-center"
       >
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-sky-200">
@@ -64,6 +83,7 @@ export default function LandingPage() {
         <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/login"
+            onClick={goToLogin}
             className="w-fit rounded-full bg-white px-6 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-sky-100"
           >
             Sign in as counsellor

@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "motion/react";
 import { GraduationCap } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +29,13 @@ export function AuthShell({
       waveOpacity={0.6}
       className="flex min-h-dvh items-center justify-center px-4 py-12"
     >
-      <Card className="w-full max-w-sm border-white/10 bg-[#0b1226]/80 shadow-2xl backdrop-blur-xl">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-sm"
+      >
+      <Card className="w-full border-white/10 bg-[#0b1226]/80 shadow-2xl backdrop-blur-xl">
         <CardContent className="pt-8">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-white">
@@ -44,9 +53,10 @@ export function AuthShell({
           <div className="mt-4 text-center text-[13px] text-slate-300">{footer}</div>
         </CardContent>
       </Card>
+      </motion.div>
     </WavyBackground>
   );
 }
 
 export const authInputClass =
-  "w-full rounded-md border border-white/15 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400";
+  "w-full rounded-md border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white caret-white placeholder:font-normal placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400";

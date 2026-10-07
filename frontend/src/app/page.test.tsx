@@ -13,6 +13,10 @@ vi.mock("next/font/google", () => ({
   Instrument_Serif: () => ({ className: "serif-mock" }),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+
 describe("LandingPage", () => {
   it("sends counsellors to sign in", () => {
     render(<LandingPage />);
