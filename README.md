@@ -10,7 +10,7 @@ GradGuide Copilot is a counsellor-facing course recommendation assistant designe
 2. **Next Best Question** — the single missing answer with the highest measured impact across the top 10 recommendations (deterministic impact score, never fabricated).
 3. **What-if Recommendation Explorer** — counsellors preview GPA/budget/country/intake changes; the stored profile is never mutated (verified read-only).
 
-**Core workflow:** counsellor signs in → opens workspace → imports the student resume (or uses an existing profile) → reviews/confirm extracted fields with provenance → gets ranked recommendations → asks the next-best question → explores what-ifs → compares programmes → saves an immutable session snapshot.
+**Core workflow:** counsellor signs up/in → opens workspace → imports the student resume (or uses an existing profile) → reviews/confirms extracted fields with provenance → gets ranked recommendations → asks the next-best question → records the answer (scores update live) → explores what-ifs → compares programmes → saves an immutable session snapshot.
 
 **Product rules that never bend:** the engine is pure deterministic TypeScript (no LLM in ranking); unknown information is *unknown*, never ineligible and never invented; manual counsellor input always outranks resume extraction; session history is frozen at creation time.
 
@@ -27,12 +27,12 @@ gradguide/
 - `frontend/src/app/(app)/` — routes: workspace, students, courses, sessions, settings
 - `frontend/src/components/` — Sidebar, PageHeader, StudentProfile, RecommendationCard, MatchScore, NextQuestionCard
 - `frontend/src/components/ui/` — button, card, badge, separator, avatar
-- `frontend/src/lib/` — `types.ts`, `mock-data.ts` (mock data stays separate from UI)
-- `backend/src/index.ts` — Express app with `GET /api/health` only
+- `frontend/src/lib/` — `api.ts` (typed fetch wrappers), `api-types.ts`, `auth-client.ts`
+- `frontend/next.config.ts` — `/api/*` rewrites proxy browser traffic to the backend (same-origin)
+- `backend/src/index.ts` — Express app: better-auth handler + API routers
 - `backend/src/db/schema.ts` — Drizzle schema + relations + inferred types
 - `backend/src/db/{index,utils,seed}.ts` — connection pool, health probe, demo seed
 - `backend/drizzle/` — generated SQL migrations
-- `docker-compose.yml` — local PostgreSQL 16
 
 ## Database (Milestone 2)
 
@@ -222,6 +222,18 @@ badge, template question, potential impact, and the structured reason.
 scenarios, rank sensitivity, ties, malformed evidence, and 10×
 determinism (19 new tests).
 
+### Answering the question (closes the loop)
+
+The card is interactive: field-appropriate answer inputs (IELTS/TOEFL
+overall, GPA + scale, budget + currency, comma-separated countries,
+intake text, career-goal text, work-experience months) save via
+`PATCH /api/students/:id` — authenticated, Zod-validated, only the
+supplied keys change, unknowns stay null. Saving refreshes the
+workspace, so recommendations and the next question recompute live.
+"Add to session notes" appends the question + reason to the active
+session (disabled until a session is started). Profile edits touch the
+live row only — past session snapshots are copies and never rewrite.
+
 ## What-If Recommendation Explorer (Milestone 8)
 
 Counsellors can temporarily override GPA, budget, country, and intake to
@@ -383,12 +395,20 @@ idempotent persistence. No per-university scrapers.
 
 ### Approach
 
-better-auth@1.3.9 (email + password only, pinned — newer lines conflict
-with the repo's drizzle-orm/vitest pins), owned by the backend Express
+better-auth (email + password only), owned by the backend Express
 app and backed by the shared PostgreSQL. No OAuth, roles, or tenants.
-The Next.js frontend is a thin client (login form, session reads);
-cookies are same-site localhost so they flow to the API with
-credentialed requests and CORS.
+Registration is open: counsellors self-serve at `/signup`; sessions are
+scoped to each counsellor's own user id. The Next.js frontend keeps zero
+auth logic — sign-up/in and session reads round-trip to the backend.
+
+### Same-origin API proxy
+
+The browser never talks to the backend domain directly. `next.config.ts`
+rewrites `/api/*` to the backend, so all browser traffic is same-origin:
+no CORS allow-list to keep in sync, and auth cookies are first-party
+(Chrome blocks them as third-party otherwise, which silently breaks
+login). Server Components still call the backend directly via
+`BACKEND_API_URL` and forward cookies explicitly.
 
 ### Local development
 
@@ -398,8 +418,9 @@ npm run db:migrate
 npm run db:seed                         # creates demo@gradguide.local (password from DEMO_COUNSELLOR_*)
 ```
 
-Sign in at `/login` with the demo credentials. Never commit real
-credentials; the dev password lives only in local `.env`.
+Sign in at `/login` with the demo credentials, or create your own
+account at `/signup`. Never commit real credentials; secrets live only
+in local `.env` files.
 
 ### Identity → sessions
 
@@ -413,9 +434,10 @@ no per-counsellor student ownership yet).
 ### Protected surface
 
 Pages (middleware redirect to `/login?next=…`): `/workspace`,
-`/workspace/compare`, `/sessions`, `/sessions/:id`. APIs: every
-`/api/...sessions...`, `/api/notes/...` route via `requireAuth` plus
-ownership checks. Sidebar shows the live counsellor with logout.
+`/workspace/compare`, `/sessions`, `/sessions/:id`. `/login` and
+`/signup` are public. APIs: every `/api/...sessions...`,
+`/api/students` write, and `/api/notes/...` route via `requireAuth`
+plus ownership checks. Sidebar shows the live counsellor with logout.
 
 ### Limitations
 
@@ -538,11 +560,12 @@ Nothing reaches a student profile without explicit confirmation.
 - Verified end-to-end in a real browser: upload → review → confirm →
   69 ranked recommendations, working NBQ/What-If/session flow.
   ~250ms per resume, no queues.
-- Drive-by fix this milestone: `sessionsRouter.use(requireAuth)` ran
-  for every `/api/*` request (prefix-mounted router), 401ing public
-  routes and breaking all server-rendered session reads. Auth is now
-  per-route; the frontend also sends cookies (`credentials: include`,
-  `next/headers` forwarding) so browser session flows work.
+- Auth is per-route (`requireAuth` on session/note/student-write
+  routes, never router-level `use()` — a bare `use()` on a
+  prefix-mounted router gates every `/api/*` request, including public
+  routes). The browser rides the same-origin `/api` proxy
+  (`credentials: include`, `next/headers` forwarding server-side) so
+  session flows work without CORS or third-party cookies.
 
 ## Run locally
 
@@ -573,8 +596,8 @@ Build / lint / tests:
 npm run build:frontend
 npm run build:backend
 npm run lint
-npm run test:backend   # 312 tests (live-DB tests need DATABASE_URL)
-npm run test --workspace=gradguide-frontend   # 49 tests
+npm run test:backend   # 316 tests; 14 live-DB tests need the dev seed (db:seed)
+npm run test --workspace=gradguide-frontend   # 52 tests
 ```
 
 3-minute demo script: login → workspace (ranked recommendations +
@@ -595,8 +618,38 @@ and `FRONTEND_URL` must be the deployed origins (cookies are
 `Secure` in production); run `db:migrate` on deploy; `db:seed`
 resets tables and is dev-only.
 
-Frontend: `BACKEND_API_URL` (server fetches), `NEXT_PUBLIC_API_URL`
-(browser fetches, same backend origin), optional `WORKSPACE_STUDENT_ID`.
+Frontend: `BACKEND_API_URL` (server fetches + `/api` rewrite target),
+`NEXT_PUBLIC_API_URL` (prerender fallback for the auth client),
+optional `WORKSPACE_STUDENT_ID`.
+
+## Deployment
+
+- **Database (primary): Neon Postgres.** Local `backend/.env` and the
+  Render backend both point at the same Neon URL — one database for
+  dev and prod. Run `npm run db:migrate` anywhere with that URL to
+  apply `backend/drizzle/*.sql`.
+- **Backend: Render web service** (`render.yaml` blueprint). Needs
+  `DATABASE_URL` (the Neon URL), `BETTER_AUTH_SECRET`,
+  `BETTER_AUTH_URL` + `FRONTEND_URL` set to the deployed origins,
+  `PORT`. Pre-deploy runs `db:migrate`.
+- **Frontend: Vercel**, root `frontend/`. Needs `BACKEND_API_URL`
+  (rewrite target + server fetches) and `NEXT_PUBLIC_API_URL`
+  (prerender fallback). No Vercel config file — defaults work.
+- **Catalogue:** production starts empty — fill it with
+  `npm run ingest --workspace=gradguide-backend -- --all`
+  (or `--country=US|UK|CA|DE`, `--limit=N`, `--dry-run`) from any
+  machine holding the Neon URL. Never run `db:seed` against
+  production: it wipes all tables and inserts mock data.
+- **Fresh-database behavior:** `/workspace` with an unknown student
+  redirects to `/students` (empty roster + Add-student CTA) and
+  `/sessions` renders "No sessions yet" instead of erroring.
+- **Platform-native deps:** `@rolldown/binding-darwin-arm64` and
+  `@tailwindcss/oxide-linux-x64-gnu` are pinned under
+  `optionalDependencies` (not `devDependencies`) so the lockfile
+  carries both platforms: macOS skips the Linux entries, Linux skips
+  the macOS ones. A bare `npm install` on either platform works;
+  putting either package in `dependencies`/`devDependencies` breaks
+  the other platform's build with `EBADPLATFORM`.
 
 ## Decisions
 
