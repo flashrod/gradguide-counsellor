@@ -103,6 +103,22 @@ export function BudgetPlanner({
                 budgetAmount != null &&
                 budgetCurrency != null &&
                 split.totalCurrency === budgetCurrency;
+              // Honest partial: one side known still informs (e.g. tuition
+              // annualizes but living was never published). Never summed
+              // with an unknown side, never estimated.
+              const partial =
+                split.total == null &&
+                (split.tuition != null || split.living != null)
+                  ? {
+                      label:
+                        split.tuition != null && split.tuitionCurrency != null
+                          ? `Tuition ${formatMoney(split.tuition, split.tuitionCurrency)} + living unknown`
+                          : `Living ${formatMoney(
+                              split.living as number,
+                              split.livingCurrency as string
+                            )} + tuition unknown`,
+                    }
+                  : null;
               const rowMax = Math.max(
                 split.tuition ?? 0,
                 split.living ?? 0,
@@ -139,6 +155,8 @@ export function BudgetPlanner({
                     </p>
                     {verdict != null ? (
                       <Badge variant={verdict.tone}>{verdict.label}</Badge>
+                    ) : partial != null ? (
+                      <Badge variant="secondary">Partial</Badge>
                     ) : (
                       <Badge variant="secondary">Unknown total</Badge>
                     )}
@@ -172,7 +190,9 @@ export function BudgetPlanner({
                       : "Living unknown"}
                     {split.total != null && split.totalCurrency != null
                       ? ` · Total ${formatMoney(split.total, split.totalCurrency)}`
-                      : ""}
+                      : partial != null
+                        ? ` · ${partial.label}`
+                        : ""}
                   </p>
                 </div>
               );
