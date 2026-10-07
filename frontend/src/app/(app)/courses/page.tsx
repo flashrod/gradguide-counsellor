@@ -25,6 +25,24 @@ function selectClass(): string {
   return "rounded-md border border-input bg-background px-2.5 py-2 text-sm";
 }
 
+/** How much usable data a catalogue row carries (tuition, English,
+// intakes, duration). Powers the default "Most complete" sort. */
+function completenessScore(course: {
+  tuitionAmount: number | null;
+  tuitionCurrency: string | null;
+  minIeltsOverall: number | null;
+  minToeflOverall: number | null;
+  intakes: string[];
+  durationMonths: number | null;
+}): number {
+  return (
+    (course.tuitionAmount != null && course.tuitionCurrency != null ? 1 : 0) +
+    (course.minIeltsOverall != null || course.minToeflOverall != null ? 1 : 0) +
+    (course.intakes.length > 0 ? 1 : 0) +
+    (course.durationMonths != null ? 1 : 0)
+  );
+}
+
 export default async function CoursesPage({
   searchParams,
 }: {
@@ -41,8 +59,15 @@ export default async function CoursesPage({
     getCatalogueMeta(),
   ]);
 
-  const sort = params.sort ?? "university";
+  const sort = params.sort ?? "complete";
   const courses = [...catalogue.courses].sort((a, b) => {
+    if (sort === "complete") {
+      return (
+        completenessScore(b) - completenessScore(a) ||
+        a.universityName.localeCompare(b.universityName) ||
+        a.courseName.localeCompare(b.courseName)
+      );
+    }
     if (sort === "course") return a.courseName.localeCompare(b.courseName);
     if (sort === "country")
       return (
@@ -116,6 +141,7 @@ export default async function CoursesPage({
             <label className="block text-xs font-medium text-slate-600">
               Sort
               <select name="sort" defaultValue={sort} className={`${selectClass()} mt-1.5 block w-full`}>
+                <option value="complete">Most complete</option>
                 <option value="university">University</option>
                 <option value="course">Course</option>
                 <option value="country">Country</option>
