@@ -62,12 +62,20 @@ export default async function WorkspacePage({
         title="Counsellor Workspace"
         subtitle="Make faster, more consistent course recommendations."
         actions={
-          <Link
-            href="/workspace/resume"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700"
-          >
-            Import resume
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/live?student=${student.id}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Live mode
+            </Link>
+            <Link
+              href="/workspace/resume"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700"
+            >
+              Import resume
+            </Link>
+          </div>
         }
       />
 

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_PREFIXES = ["/workspace", "/sessions"];
+const PROTECTED_PREFIXES = ["/workspace", "/sessions", "/live", "/deadlines"];
 
 /**
  * Route protection (Milestone 11). Verifies the backend session by
@@ -33,5 +33,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/workspace/:path*", "/sessions/:path*"],
+  matcher: ["/workspace/:path*", "/sessions/:path*", "/live/:path*", "/deadlines/:path*"],
 };
