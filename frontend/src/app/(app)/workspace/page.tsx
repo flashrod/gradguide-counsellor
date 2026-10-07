@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { parseAnsweredNotes } from "@/lib/qa-notes";
 import { EmptyRecommendations } from "@/components/empty-recommendations";
+import { BudgetPlanner } from "@/components/budget-planner";
 import { NextQuestionCard } from "@/components/next-question-card";
 import { PageHeader } from "@/components/page-header";
 import { RecommendationList } from "@/components/recommendation-list";
@@ -137,8 +138,13 @@ export default async function WorkspacePage({
         />
       </section>
 
-      <WhatIfPanel
-        studentId={student.id}
+      <BudgetPlanner
+        recommendations={data.recommendations}
+        budgetAmount={student.budgetAmount}
+        budgetCurrency={student.budgetCurrency}
+      />
+
+      <WhatIfPanel        studentId={student.id}
         activeSessionId={activeSession?.id ?? null}
         defaults={{
           budgetAmount: student.budgetAmount?.toString() ?? "",
