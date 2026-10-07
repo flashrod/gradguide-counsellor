@@ -58,7 +58,8 @@ export function RecommendationList({ recommendations }: RecommendationListProps)
       )}
 
       {selectedIds.length > 0 && (
-        <Card>
+        <div className="sticky bottom-4 z-10">
+          <Card className="shadow-lg">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
             <div className="flex items-center gap-2.5">
               <Badge variant="secondary">{selectedIds.length} selected</Badge>
@@ -82,7 +83,8 @@ export function RecommendationList({ recommendations }: RecommendationListProps)
               </Button>
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
       )}
     </div>
   );
