@@ -26,7 +26,7 @@ export function AuthShell({
       waveOpacity={0.6}
       className="flex min-h-dvh items-center justify-center px-4 py-12"
     >
-      <Card className="w-full max-w-sm border-white/10 bg-white/[0.04] shadow-2xl backdrop-blur-md">
+      <Card className="w-full max-w-sm border-white/10 bg-[#0b1226]/80 shadow-2xl backdrop-blur-xl">
         <CardContent className="pt-8">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-600 text-white">

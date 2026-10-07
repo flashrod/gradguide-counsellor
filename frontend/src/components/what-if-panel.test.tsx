@@ -126,4 +126,33 @@ describe("WhatIfPanel", () => {
     });
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  it("rejects a currency without an amount", async () => {
+    mockFetchOnce(SIMULATION);
+    render(<WhatIfPanel studentId="s1" activeSessionId={null} defaults={DEFAULTS} />);
+    fireEvent.change(screen.getByLabelText("Scenario budget currency"), {
+      target: { value: "USD" },
+    });
+    fireEvent.click(screen.getByText("Apply simulation"));
+    await waitFor(() => {
+      expect(screen.getByText("Enter a budget amount of 0 or more.")).toBeDefined();
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects a GPA above its scale", async () => {
+    mockFetchOnce(SIMULATION);
+    render(<WhatIfPanel studentId="s1" activeSessionId={null} defaults={DEFAULTS} />);
+    fireEvent.change(screen.getByLabelText("Scenario GPA value"), {
+      target: { value: "11" },
+    });
+    fireEvent.change(screen.getByLabelText("Scenario GPA scale"), {
+      target: { value: "10" },
+    });
+    fireEvent.click(screen.getByText("Apply simulation"));
+    await waitFor(() => {
+      expect(screen.getByText(/between 0 and its scale/i)).toBeDefined();
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

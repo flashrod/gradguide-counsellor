@@ -144,7 +144,13 @@ export async function simulateRecommendations(  studentId: string,
     throw new ApiError(404, "Student not found.");
   }
   if (response.status === 400) {
-    throw new ApiError(400, "Some scenario values are invalid. Check them and try again.");
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new ApiError(
+      400,
+      data?.error ?? "Some scenario values are invalid. Check them and try again."
+    );
   }
   if (!response.ok) {
     throw new ApiError(response.status, "Scenario simulation failed.");

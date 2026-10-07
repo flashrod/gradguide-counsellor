@@ -126,21 +126,41 @@ export function WhatIfPanel({ studentId, activeSessionId, defaults }: WhatIfPane
   async function applySimulation(): Promise<void> {
     setError(null);
     const overrides: ApiSimulationOverrides = {};
+    // Mirror the backend schema (simulationOverridesSchema): partial or
+    // inconsistent groups are rejected with 400, so validate here with
+    // field-specific messages instead of a generic failure.
     if (budgetAmount.trim() !== "" || budgetCurrency.trim() !== "") {
       const amount = Number(budgetAmount);
-      if (!Number.isFinite(amount) || amount < 0) {
-        setError("Budget amount must be a number of 0 or more.");
+      const currency = budgetCurrency.trim().toUpperCase();
+      if (budgetAmount.trim() === "" || !Number.isFinite(amount) || amount < 0) {
+        setError("Enter a budget amount of 0 or more.");
         return;
       }
-      overrides["budget"] = { amount, currency: budgetCurrency.trim() };
+      if (!/^[A-Z]{3}$/.test(currency)) {
+        setError("Enter a 3-letter budget currency (e.g. INR, USD, GBP).");
+        return;
+      }
+      overrides["budget"] = { amount, currency };
     }
     if (country.trim() !== "") overrides["preferredCountry"] = country.trim();
     if (intake.trim() !== "") overrides["preferredIntake"] = intake.trim();
     if (gpaValue.trim() !== "" || gpaScale.trim() !== "") {
       const value = Number(gpaValue);
       const scale = Number(gpaScale);
+      if (gpaValue.trim() === "" || gpaScale.trim() === "") {
+        setError("Enter both GPA value and scale (e.g. 8.4 on 10).");
+        return;
+      }
       if (!Number.isFinite(value) || !Number.isFinite(scale)) {
         setError("GPA value and scale must both be numbers.");
+        return;
+      }
+      if (!Number.isInteger(scale) || scale <= 0) {
+        setError("GPA scale must be a whole number above 0.");
+        return;
+      }
+      if (value < 0 || value > scale) {
+        setError("GPA value must be between 0 and its scale.");
         return;
       }
       overrides["gpa"] = { value, scale };
