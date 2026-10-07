@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -422,6 +423,41 @@ export const resumeExtractions = pgTable(
   (table) => [
     index("resume_extractions_counsellor_id_idx").on(table.counsellorId),
     index("resume_extractions_student_id_idx").on(table.studentId),
+  ]
+);
+
+// ---------------------------------------------------------------------------
+// deadlines
+// ---------------------------------------------------------------------------
+
+/**
+ * Counsellor-owned deadline reminders (application due dates, document
+ * cutoffs, follow-ups). Dates are entered by the counsellor — never
+ * derived from intake season names, which carry no year and no deadline.
+ *
+ * `counsellorId` owns the row (same pattern as counselling sessions).
+ * `studentId` optionally links the student; deleting the student removes
+ * their reminders with them.
+ */
+export const deadlines = pgTable(
+  "deadlines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    counsellorId: text("counsellor_id")
+      .notNull()
+      .references(() => authUser.id),
+    studentId: uuid("student_id").references(() => students.id, {
+      onDelete: "cascade",
+    }),
+    title: text("title").notNull(),
+    dueDate: date("due_date", { mode: "date" }).notNull(),
+    note: text("note"),
+    done: boolean("done").notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    index("deadlines_counsellor_id_idx").on(table.counsellorId),
+    index("deadlines_student_id_idx").on(table.studentId),
   ]
 );
 

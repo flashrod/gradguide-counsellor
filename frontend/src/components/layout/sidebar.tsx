@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import {
+  BellRing,
   BookOpen,
   CalendarClock,
   GraduationCap,
@@ -27,6 +28,7 @@ const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/students", label: "Students", icon: Users },
   { href: "/courses", label: "Courses", icon: BookOpen },
   { href: "/sessions", label: "Sessions", icon: CalendarClock },
+  { href: "/deadlines", label: "Deadlines", icon: BellRing },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

@@ -419,12 +419,93 @@ export async function confirmResume(
 
 export async function listStudents(
   options?: ApiRequestOptions
-): Promise<{ students: ApiStudentSummary[] }> {
-  const response = await authedFetch("/api/students", {
+): Promise<{ students: ApiStudentSummary[] }> {  const response = await authedFetch("/api/students", {
     method: "GET",
     ...(options?.cookie != null ? { headers: { cookie: options.cookie } } : {}),
   });
   if (response.status === 401) throw new ApiError(401, "Authentication required.");
   if (!response.ok) errorMessage(response.status, "Recommendation service returned an error.");
   return (await response.json()) as { students: ApiStudentSummary[] };
+}
+
+/** Deadline reminders (counsellor-owned, dates are counsellor-entered). */
+export interface ApiDeadline {
+  id: string;
+  studentId: string | null;
+  studentName: string | null;
+  title: string;
+  dueDate: string;
+  note: string | null;
+  done: boolean;
+}
+
+export interface CreateDeadlineBody {
+  title: string;
+  dueDate: string;
+  studentId?: string | null;
+  note?: string | null;
+}
+
+async function deadlineRequest<T>(path: string, init: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${backendBaseUrl()}${path}`, {
+      ...init,
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new ApiError(0, "Recommendation service is unreachable.");
+  }
+  if (response.status === 401) throw new ApiError(401, "Authentication required.");
+  if (response.status === 404) throw new ApiError(404, "Not found.");
+  if (response.status === 400) {
+    const data = (await response.json().catch(() => null)) as {
+      error?: string;
+    } | null;
+    throw new ApiError(400, data?.error ?? "Invalid request.");
+  }
+  if (!response.ok) {
+    throw new ApiError(response.status, "Recommendation service returned an error.");
+  }
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+export async function listDeadlines(
+  options?: ApiRequestOptions
+): Promise<{ deadlines: ApiDeadline[] }> {
+  return deadlineRequest("/api/deadlines", {
+    method: "GET",
+    ...(options?.cookie != null ? { headers: { cookie: options.cookie } } : {}),
+  });
+}
+
+export async function createDeadline(
+  body: CreateDeadlineBody
+): Promise<{ deadline: ApiDeadline }> {
+  return deadlineRequest("/api/deadlines", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function setDeadlineDone(
+  deadlineId: string,
+  done: boolean
+): Promise<{ deadline: ApiDeadline }> {
+  return deadlineRequest(`/api/deadlines/${deadlineId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ done }),
+  });
+}
+
+export async function deleteDeadline(deadlineId: string): Promise<void> {
+  await deadlineRequest<void>(`/api/deadlines/${deadlineId}`, {
+    method: "DELETE",
+  });
 }
