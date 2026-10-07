@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import {
+  ApiError,
   DEMO_STUDENT_ID,
   getNextQuestion,
   getRecommendations,
@@ -39,12 +41,18 @@ export default async function WorkspacePage({
   // counsellor-scoped session banner can load. Public calls stay as-is.
   const { cookies } = await import("next/headers");
   const cookie = (await cookies()).toString();
+  // A missing student (e.g. the dev-seeded demo id on a fresh production
+  // database) is a routing condition, not a render failure: send the
+  // counsellor to the roster, which already handles the empty state.
   const [{ student }, data, nextQuestion, { sessions }] = await Promise.all([
     getStudent(studentId),
     getRecommendations(studentId),
     getNextQuestion(studentId),
     listSessions(studentId, { cookie }),
-  ]);
+  ]).catch((error: unknown) => {
+    if (error instanceof ApiError && error.status === 404) redirect("/students");
+    throw error;
+  });
   const activeSession =
     sessions.find((session) => session.status === "ACTIVE") ?? null;
 
