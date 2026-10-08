@@ -250,6 +250,19 @@ export function ResumeReview({ preselectedStudentId }: ResumeReviewProps) {
       profile.preferredIntake = intake.trim();
       fieldSources["preferredIntake"] = "manual";
     }
+    // Mirror the backend schema: whole numbers only for scale/TOEFL/months.
+    if (profile.gpaScale != null && (!Number.isInteger(profile.gpaScale) || profile.gpaScale <= 0)) {
+      setError("GPA scale must be a whole number above 0.");
+      return;
+    }
+    if (profile.toeflOverall != null && (!Number.isInteger(profile.toeflOverall) || profile.toeflOverall < 0 || profile.toeflOverall > 120)) {
+      setError("TOEFL overall must be a whole number between 0 and 120.");
+      return;
+    }
+    if (profile.workExperienceMonths != null && (!Number.isInteger(profile.workExperienceMonths) || profile.workExperienceMonths < 0)) {
+      setError("Work experience must be a whole number of months, 0 or more.");
+      return;
+    }
     setBusy(true);
     try {
       const result = await confirmResume(resume.id, {

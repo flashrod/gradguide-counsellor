@@ -30,7 +30,7 @@ function FieldAnswer({
   busy,
 }: {
   field: string;
-  onSave: (patch: Record<string, unknown>, display: string) => void;
+  onSave: (patch: Record<string, unknown> | null, display: string) => void;
   busy: boolean;
 }) {
   const [text, setText] = useState("");
@@ -38,6 +38,24 @@ function FieldAnswer({
   const [num2, setNum2] = useState("");
 
   function save(): void {
+    // Blank numerics must stop here: Number("") is 0, which the backend
+    // rightly rejects (scale must be positive, currency 3 letters).
+    if (field === "academic" && (num1.trim() === "" || num2.trim() === "")) {
+      return onSave(null, "");
+    }
+    if (field === "budget" && (num1.trim() === "" || num2.trim() === "")) {
+      return onSave(null, "");
+    }
+    if (field === "work-experience" && num1.trim() === "") {
+      return onSave(null, "");
+    }
+    if (
+      field === "english" &&
+      num1.trim() === "" &&
+      num2.trim() === ""
+    ) {
+      return onSave(null, "");
+    }
     if (field === "career" || field === "intake") {
       const value = text.trim();
       return onSave(
@@ -177,8 +195,8 @@ function QuestionBody({
     setBusy(false);
   }
 
-  async function saveAnswer(patch: Record<string, unknown>, display: string): Promise<void> {
-    if (display === "") {
+  async function saveAnswer(patch: Record<string, unknown> | null, display: string): Promise<void> {
+    if (patch == null || display === "") {
       fail("Type an answer first.");
       return;
     }
