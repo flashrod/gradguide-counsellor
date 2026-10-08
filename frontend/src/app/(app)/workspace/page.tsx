@@ -76,7 +76,7 @@ export default async function WorkspacePage({
           <div className="flex items-center gap-2">
             <Link
               href={`/live?student=${student.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-transparent dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
             >
               Live mode
             </Link>
