@@ -33,6 +33,8 @@ const dbStudentRow: DbStudent = {
   preferredCountries: ["UK", "Canada"],
   preferredIntake: "September 2027",
   workExperienceMonths: null,
+  livingCostAmount: null,
+  livingCostCurrency: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
