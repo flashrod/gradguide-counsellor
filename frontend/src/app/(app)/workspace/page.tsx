@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Radio } from "lucide-react";
 
 import {
   ApiError,
@@ -76,13 +77,14 @@ export default async function WorkspacePage({
           <div className="flex items-center gap-2">
             <Link
               href={`/live?student=${student.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-transparent dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-500"
             >
+              <Radio className="h-3.5 w-3.5" aria-hidden />
               Live mode
             </Link>
             <Link
               href="/workspace/resume"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-500"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-white/10 dark:text-slate-200 dark:hover:bg-white/15"
             >
               Import resume
             </Link>
