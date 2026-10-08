@@ -9,6 +9,15 @@ and a compact live mode for use alongside the call.
 **Live:** frontend on Vercel · backend on Render · Postgres on Neon
 **Stack:** Next.js 16 + React 19 + Tailwind v4 · Express + Drizzle ORM + better-auth
 
+## Video walkthrough
+
+Watch the full demo: **https://youtu.be/O20dHFfcPJQ**
+
+Covers counsellor signup, resume import with review, ranked explainable
+recommendations, the next-best-question answer loop, what-if exploration,
+side-by-side comparison, immutable session snapshots, deadline reminders,
+visa checklist, true-cost planner, and live counsel mode.
+
 ## What it does
 
 **Counsellor workflow** — sign up at `/signup` (open registration, one
