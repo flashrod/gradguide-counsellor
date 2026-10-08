@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { AuthShell, authInputClass } from "@/components/auth-shell";
@@ -13,6 +14,7 @@ export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,16 +87,31 @@ export default function SignupPage() {
         </label>
         <label className="block text-xs font-medium text-white">
           Password
-          <input
-            aria-label="Password"
-            type="password"
-            required
-            minLength={6}
-            autoComplete="new-password"
-            className={`${authInputClass} mt-1`}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <span className="relative mt-1 block">
+            <input
+              aria-label="Password"
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={6}
+              autoComplete="new-password"
+              className={`${authInputClass} pr-10`}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
+              className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-1 text-slate-300 hover:text-white"
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" aria-hidden />
+              ) : (
+                <Eye className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          </span>
         </label>
         {error != null && (
           <p role="alert" className="text-[13px] text-red-300">
