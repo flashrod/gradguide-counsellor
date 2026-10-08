@@ -76,7 +76,7 @@ export default function LandingPage() {
             recommended right.
           </span>
         </h1>
-        <p className="max-w-xl text-base font-light text-slate-300 md:text-lg">
+        <p className="max-w-xl text-base font-light text-white md:text-lg">
           Deterministic course matches with evidence for every pick — built
           for counsellors, on live counselling calls.
         </p>
